@@ -1,42 +1,28 @@
-
-set(CMAKE_CXX_STANDARD 20)
-
 cmake_minimum_required(VERSION 3.16)
 project(ownage)
 
-add_executable(ownage src/main.cpp)
-#target_link_libraries(main PRIVATE sfml-graphics)
-#target_compile_features(main PRIVATE cxx_std_17)
+# Set the C++ standard
+set(CMAKE_CXX_STANDARD 20)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
-include_directories("c:/SFML/include")
-set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake_modules")
-find_package(SFML REQUIRED system window graphics network audio)
-if (SFML_FOUND)
-    include_directories(${SFML_INCLUDE_DIR})
-    target_link_libraries(ownage ${SFML_LIBRARIES} ${SFML_DEPENDENCIES})
-endif()
+# SFML location
+# Set the SFML directory where SFMLConfig.cmake is located
+set(SFML_DIR "C:/SFML/lib/cmake/SFML")
 
-#file(COPY assets DESTINATION ${CMAKE_BINARY_DIR})
+# Find SFML package
+set(SFML_STATIC_LIBRARIES TRUE)  # Use static linking
+find_package(SFML 2.6 COMPONENTS graphics window system REQUIRED)
 
-#include(FetchContent)
-#FetchContent_Declare(SFML
-#        GIT_REPOSITORY https://github.com/SFML/SFML.git
-#        GIT_TAG 2.6.x)
-#FetchContent_MakeAvailable(SFML)
+# Add the executable
+add_executable(${PROJECT_NAME} WIN32 src/main.cpp)
 
+# Link SFML libraries
+target_link_libraries(${PROJECT_NAME} sfml-graphics sfml-window sfml-system)
+
+# Additional settings for static linking (include dependencies)
 if(WIN32)
-    file(GLOB BINARY_DEP_DLLS "${SFML_INCLUDE_DIR}/../bin/*.dll")
-    file(COPY ${BINARY_DEP_DLLS} DESTINATION ${CMAKE_BINARY_DIR})
-    file(GLOB MINGW_DEP_DLLS "C:/mingw64/bin/*.dll")
-    file(COPY ${MINGW_DEP_DLLS} DESTINATION ${CMAKE_BINARY_DIR})
+    target_link_libraries(${PROJECT_NAME} opengl32 winmm gdi32)
 endif()
 
-#if(WIN32)
-#    add_custom_command(
-#            TARGET ownage
-#            COMMENT "Copy OpenAL DLL"
-#            PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${SFML_SOURCE_DIR}/extlibs/bin/$<IF:$<EQUAL:${CMAKE_SIZEOF_VOID_P},8>,x64,x86>/openal32.dll $<TARGET_FILE_DIR:ownage>
-#            VERBATIM)
-#endif()
+if(MINGW)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++ -static")
+endif()
