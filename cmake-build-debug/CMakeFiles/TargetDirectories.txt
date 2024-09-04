@@ -1,0 +1,5 @@
+C:/Users/peter/CLionProjects/ownage/cmake-build-debug/CMakeFiles/ownage.dir
+C:/Users/peter/CLionProjects/ownage/cmake-build-debug/CMakeFiles/package.dir
+C:/Users/peter/CLionProjects/ownage/cmake-build-debug/CMakeFiles/package_source.dir
+C:/Users/peter/CLionProjects/ownage/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/peter/CLionProjects/ownage/cmake-build-debug/CMakeFiles/rebuild_cache.dir
