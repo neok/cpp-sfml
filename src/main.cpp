@@ -32,7 +32,7 @@ class CircleWithSpeed {
 
 class Circle {
 
-    
+
 public:
     sf::Color color;
     int radius;

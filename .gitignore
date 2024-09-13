@@ -3,3 +3,4 @@
 ./cmake-build-test
 cmake-build-test/*
 cmake-build-release/*
+.idea/
