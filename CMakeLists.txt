@@ -13,7 +13,7 @@ set(SFML_STATIC_LIBRARIES TRUE)  # Use static linking
 find_package(SFML 2.6 COMPONENTS graphics window system REQUIRED)
 
 # Add the executable
-add_executable(${PROJECT_NAME} WIN32 src/main.cpp)
+add_executable(${PROJECT_NAME} WIN32 src/main.cpp src/EntityManager.cpp src/Game.cpp src/Vec2.cpp src/Components.h)
 
 # Link SFML libraries
 target_link_libraries(${PROJECT_NAME} sfml-graphics sfml-window sfml-system)
@@ -25,4 +25,8 @@ endif()
 
 if(MINGW)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++ -static")
+endif()
+
+if (WIN32)
+    set(CMAKE_EXE_LINKER_FLAGS "-static -static-libgcc -static-libstdc++ -mconsole")
 endif()
