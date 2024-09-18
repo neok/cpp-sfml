@@ -26,9 +26,9 @@ class Game {
     EntityManager    m_entities;
     sf::Font         m_font;
     sf::Text         m_text;
-    PlayerConfig     m_playerConfig;
-    EnemyConfig      m_enemyConfig;
-    BulletConfig     m_bulletConfig;
+    PlayerConfig     m_playerConfig{};
+    EnemyConfig      m_enemyConfig{};
+    BulletConfig     m_bulletConfig{};
     int              m_score = 0;
     int              m_currentFrame = 0;
     int              m_lastEnemySpawnTime = 0;
@@ -44,6 +44,8 @@ class Game {
     void sUserInput();     // System: User input
     void sLifespan();      // System: lifespan
     void sRender();        // System: render /drawing
+    void renderEntity(std::shared_ptr<Entity> e);
+
     void sEnemySpawner();  // System: spawn enemies
     void sCollision();     // System: collisions
 
