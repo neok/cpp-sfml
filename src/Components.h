@@ -10,7 +10,7 @@ public:
     Vec2 velocity = {0, 0};
     float angle = 0;
 
-    CTransform(Vec2 pos, Vec2 velocity, float angle): pos(pos), velocity(velocity), angle(angle) {
+    CTransform(const Vec2& pos, const Vec2 &v, float angle): pos(pos), velocity(v), angle(angle) {
     }
 };
 
