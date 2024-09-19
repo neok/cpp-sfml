@@ -22,6 +22,7 @@ void Game::init(const std::string &config) {
     m_window.setFramerateLimit(60);
 
     spawnPlayer();
+    // spawnEnemy();
 }
 
 void Game::run() {
@@ -30,20 +31,72 @@ void Game::run() {
         sf::Event event;
 
         sEnemySpawner();
-
-        // sCollision();
-
-        sUserInput();
         sMovement();
+        sCollision();
+        sUserInput();
+        // sGUI()
+
         sRender();
+        m_currentFrame++;
     }
 }
+
+void Game::sCollision() {
+    auto windowSizeY = m_window.getSize().y;
+    auto windowSizeX = m_window.getSize().x;
+
+    for (auto& e : m_entities.getEntities("enemy")) {
+        sf::Vector2f position = e->cShape->circle.getPosition();
+        float radius = e->cShape->circle.getRadius();
+
+        // Check and resolve collisions
+        bool collided = false;
+
+        // Bottom collision
+        if (position.y + radius > windowSizeY) {
+            position.y = windowSizeY - radius;
+            e->cTransform->velocity.y = -std::abs(e->cTransform->velocity.y);
+            collided = true;
+        }
+        // Top collision
+        else if (position.y - radius < 0) {
+            position.y = radius;
+            e->cTransform->velocity.y = std::abs(e->cTransform->velocity.y);
+            collided = true;
+        }
+
+        // Right collision
+        if (position.x + radius > windowSizeX) {
+            position.x = windowSizeX - radius;
+            e->cTransform->velocity.x = -std::abs(e->cTransform->velocity.x);
+            collided = true;
+        }
+        // Left collision
+        else if (position.x - radius < 0) {
+            position.x = radius;
+            e->cTransform->velocity.x = std::abs(e->cTransform->velocity.x);
+            collided = true;
+        }
+
+        // If collision occurred, update position and add a small random velocity change
+        if (collided) {
+            e->cShape->circle.setPosition(position);
+
+            // Add a small random change to velocity to help prevent rhythmic bouncing
+            // float randomFactor = 0.1f;  // Adjust this value to control the randomness
+            // e->cTransform->velocity.x += randomFactor * (std::rand() % 100 - 50) / 50.0f;
+            // e->cTransform->velocity.y += randomFactor * (std::rand() % 100 - 50) / 50.0f;
+        }
+    }
+}
+
 
 void Game::sEnemySpawner() {
     if (m_currentFrame - m_lastEnemySpawnTime <= 100) {
         return;
     }
     spawnEnemy();
+
 }
 
 
@@ -52,9 +105,9 @@ void Game::spawnEnemy() {
     float ex = rand() % m_window.getSize().x;
     float ey = rand() % m_window.getSize().y;
 
-    entity->cTransform = std::make_shared<CTransform>(Vec2(ex, ey), Vec2(0.0f, 0.0f), 1.0f);
+    entity->cTransform = std::make_shared<CTransform>(Vec2(ex, ey), Vec2(1.0f, 1.2f), 0.0f);
 
-    entity->cShape = std::make_shared<CShape>(14.0f, 3, sf::Color(100, 100, 100), sf::Color(255, 255, 255), 2.0f);
+    entity->cShape = std::make_shared<CShape>(14.0f, 10, sf::Color(100, 100, 100), sf::Color(255, 255, 255), 2.0f);
 
     m_lastEnemySpawnTime = m_currentFrame;
 }
@@ -83,7 +136,6 @@ void Game::sRender() {
         e->cShape->circle.setRotation(e->cTransform->angle);
         m_window.draw(e->cShape->circle);
     }
-    m_currentFrame++;
     m_window.display();
 }
 
@@ -96,7 +148,6 @@ void Game::sUserInput() {
         if (event.type == sf::Event::KeyPressed) {
             switch (event.key.code) {
                 case sf::Keyboard::W:
-
                     m_player->cInput->up = true;
                     break;
                 case sf::Keyboard::D:
@@ -115,7 +166,6 @@ void Game::sUserInput() {
         if (event.type == sf::Event::KeyReleased) {
             switch (event.key.code) {
                 case sf::Keyboard::W:
-
                     m_player->cInput->up = false;
                     break;
                 case sf::Keyboard::D:
@@ -136,7 +186,7 @@ void Game::sUserInput() {
 
 void Game::sMovement() {
     // Update the position of all entities based on their velocity
-    for (auto e: m_entities.getEntities("enemy")) {
+    for (auto &e: m_entities.getEntities("enemy")) {
         e->cTransform->pos = e->cTransform->pos + e->cTransform->velocity;
     }
     if (m_player->cInput->down) {

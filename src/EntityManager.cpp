@@ -17,7 +17,7 @@ void EntityManager::update() {
 
     for (auto& [tag, entityVector] : m_entityMap) {
       removeDeadEntities(entityVector);
-      }
+    }
 
 }
 
@@ -28,6 +28,7 @@ void EntityManager::removeDeadEntities(EntityVector &vec) {
 std::shared_ptr<Entity> EntityManager::addEntity(const std::string &tag) {
     auto entity = std::shared_ptr<Entity>(new Entity(m_totalEntities++, tag));
     m_entitiesToAdd.push_back(entity);
+    m_entityMap[tag].push_back(entity);
 
     return entity;
 }
@@ -37,6 +38,13 @@ const EntityVector &EntityManager::getEntities() {
 }
 
 const EntityVector &EntityManager::getEntities(const std::string &tag) {
-    return m_entities;
+    auto it = m_entityMap.find(tag);
+
+    if (it != m_entityMap.end()) {
+        return it->second;
+    }
+
+    static EntityVector emptyVector; // Static so we can return a reference
+    return emptyVector;
 }
 
