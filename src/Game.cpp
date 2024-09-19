@@ -5,6 +5,7 @@
 #include "Vec2.h"
 #include <SFML/Graphics.hpp>
 #include <fstream>
+#include <cmath> // for sqrt()
 #include <stdlib.h>
 
 
@@ -42,6 +43,44 @@ void Game::run() {
 }
 
 void Game::sCollision() {
+    for (auto & p : m_entities.getEntities("player")) {
+        sf::Vector2f position = p->cShape->circle.getPosition();
+        float radius = p->cShape->circle.getRadius();
+        if (position.y - radius < 0) {
+            std::cout << "collided" << std::endl;
+            position.y = radius;
+            p->cShape->circle.setPosition(position);
+        }
+
+    }
+
+    for (auto & bullet : m_entities.getEntities("bullet")) {
+        float bulletRadius = bullet->cShape->circle.getRadius();
+        bullet->cShape->circle.setOrigin(bulletRadius, bulletRadius);
+        sf::Vector2f bulletPos = bullet->cShape->circle.getPosition();
+
+
+        for (auto& enemy : m_entities.getEntities("enemy")) {
+            float enemyRadius = enemy->cShape->circle.getRadius();
+            enemy->cShape->circle.setOrigin(enemyRadius, enemyRadius);
+
+            sf::Vector2f enemyPos = enemy->cShape->circle.getPosition();
+            float a = bulletPos.x - enemyPos.x;
+            float b = bulletPos.y - enemyPos.y;
+            float distanceSquared = (a * a) + (b * b);
+            float radiusSum = bulletRadius + enemyRadius;
+
+            if (distanceSquared <= (radiusSum * radiusSum)) {
+                // Collision detected
+                std::cout << "Collided" << std::endl;
+                // bullet->destroy();
+                enemy->destroy();
+                // bullet->destroy();
+            }
+        }
+    }
+
+
     auto windowSizeY = m_window.getSize().y;
     auto windowSizeX = m_window.getSize().x;
 
@@ -90,9 +129,25 @@ void Game::sCollision() {
     }
 }
 
+void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2 &mousePos) {
+    auto bullet = m_entities.addEntity("bullet");
+    sf::Vector2f playerPos = entity->cShape->circle.getPosition();
+    // TODO move this logic to Vec2
+    Vec2 distance = Vec2(mousePos.x - playerPos.x, mousePos.y - playerPos.y);
+    float magnitude = std::sqrt(distance.x * distance.x + distance.y * distance.y);
+    Vec2 normalized = Vec2(distance.x / magnitude, distance.y / magnitude);
+    Vec2 velocity = Vec2(5.01f * normalized.x, 5.01f * normalized.y);
+
+
+
+    bullet->cTransform = std::make_shared<CTransform>(Vec2(playerPos.x, playerPos.y), velocity, 0.0f);
+
+    bullet->cShape = std::make_shared<CShape>(12.0f, 30, sf::Color(90, 0, 95), sf::Color(255, 255, 255), 1.0f);
+
+}
 
 void Game::sEnemySpawner() {
-    if (m_currentFrame - m_lastEnemySpawnTime <= 100) {
+    if (m_currentFrame - m_lastEnemySpawnTime <= 10) {
         return;
     }
     spawnEnemy();
@@ -107,7 +162,7 @@ void Game::spawnEnemy() {
 
     entity->cTransform = std::make_shared<CTransform>(Vec2(ex, ey), Vec2(1.0f, 1.2f), 0.0f);
 
-    entity->cShape = std::make_shared<CShape>(14.0f, 10, sf::Color(100, 100, 100), sf::Color(255, 255, 255), 2.0f);
+    entity->cShape = std::make_shared<CShape>(24.0f, 10, sf::Color(100, 100, 100), sf::Color(255, 255, 255), 2.0f);
 
     m_lastEnemySpawnTime = m_currentFrame;
 }
@@ -180,12 +235,24 @@ void Game::sUserInput() {
                     break;
             }
         }
+
+        if (event.type == sf::Event::MouseButtonPressed) {
+            std::cout << event.mouseButton.button << std::endl;
+            if (event.mouseButton.button == sf::Mouse::Left) {
+                std::cout << "spawn bullet" << std::endl;
+
+                spawnBullet(m_player, Vec2(static_cast<float>(event.mouseButton.x), static_cast<float>(event.mouseButton.y)));
+            }
+        }
     }
 }
 
 
 void Game::sMovement() {
     // Update the position of all entities based on their velocity
+    for (auto &e: m_entities.getEntities("bullet")) {
+        e->cTransform->pos = e->cTransform->pos + e->cTransform->velocity;
+    }
     for (auto &e: m_entities.getEntities("enemy")) {
         e->cTransform->pos = e->cTransform->pos + e->cTransform->velocity;
     }
@@ -196,7 +263,9 @@ void Game::sMovement() {
         m_player->cTransform->pos.x -= 4.0f;
     }
     if (m_player->cInput->up) {
-        m_player->cTransform->pos.y -= 4.0f;
+        if (m_player->cShape->circle.getPosition().y - m_player->cShape->circle.getRadius() > 0) {
+            m_player->cTransform->pos.y -= 4.0f;
+        }
     }
     if (m_player->cInput->right) {
         m_player->cTransform->pos.x += 4.0f;
