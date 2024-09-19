@@ -22,7 +22,12 @@ void EntityManager::update() {
 }
 
 void EntityManager::removeDeadEntities(EntityVector &vec) {
-    //todo impl
+    vec.erase(
+            std::remove_if(vec.begin(), vec.end(), [](const std::shared_ptr<Entity>& entity) {
+                return !entity->isActive(); // If the entity is not active, it will be removed
+            }),
+            vec.end()
+        );
 }
 
 std::shared_ptr<Entity> EntityManager::addEntity(const std::string &tag) {
