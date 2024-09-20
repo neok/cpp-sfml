@@ -7,7 +7,12 @@
 #include <fstream>
 #include <cmath> // for sqrt()
 #include <stdlib.h>
-
+float RandomFloat(float a, float b) {
+    float random = ((float) rand()) / (float) RAND_MAX;
+    float diff = b - a;
+    float r = random * diff;
+    return a + r;
+}
 
 Game::Game(const std::string &config) {
     init(config);
@@ -132,11 +137,8 @@ void Game::sCollision() {
 void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2 &mousePos) {
     auto bullet = m_entities.addEntity("bullet");
     sf::Vector2f playerPos = entity->cShape->circle.getPosition();
-    // TODO move this logic to Vec2
-    Vec2 distance = Vec2(mousePos.x - playerPos.x, mousePos.y - playerPos.y);
-    float magnitude = std::sqrt(distance.x * distance.x + distance.y * distance.y);
-    Vec2 normalized = Vec2(distance.x / magnitude, distance.y / magnitude);
-    Vec2 velocity = Vec2(5.01f * normalized.x, 5.01f * normalized.y);
+    Vec2 normalized = mousePos.normalized(playerPos);
+    Vec2 velocity = Vec2(15.01f * normalized.x, 15.01f * normalized.y);
 
 
 
@@ -147,7 +149,7 @@ void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2 &mousePos) {
 }
 
 void Game::sEnemySpawner() {
-    if (m_currentFrame - m_lastEnemySpawnTime <= 10) {
+    if (m_currentFrame - m_lastEnemySpawnTime <= 100) {
         return;
     }
     spawnEnemy();
@@ -160,9 +162,33 @@ void Game::spawnEnemy() {
     float ex = rand() % m_window.getSize().x;
     float ey = rand() % m_window.getSize().y;
 
-    entity->cTransform = std::make_shared<CTransform>(Vec2(ex, ey), Vec2(1.0f, 1.2f), 0.0f);
+    auto radius = m_player->cShape->circle.getRadius();
+    m_player->cShape->circle.setOrigin(radius, radius);
 
-    entity->cShape = std::make_shared<CShape>(24.0f, 10, sf::Color(100, 100, 100), sf::Color(255, 255, 255), 2.0f);
+    sf::Vector2f playerPos = m_player->cShape->circle.getPosition();
+
+    float defaultRadius = 24.f;
+    float constRange = 30.f;
+    // do not spawn enemy on top of player
+    // algo can be improved in many ways, but for this game it's more than enough
+    if (ex > playerPos.x - radius && ex < playerPos.x + radius) {
+        ex = playerPos.x + radius + constRange;
+        if (ex + defaultRadius > static_cast<float>(m_window.getSize().x)) {
+            ex = playerPos.x - radius - constRange;
+        }
+    }
+    if (ey > playerPos.y - radius && ey < playerPos.y + radius) {
+        ey = playerPos.y + radius + constRange;
+        if (ey + defaultRadius > static_cast<float>(m_window.getSize().y)) {
+            ey = playerPos.y - radius - constRange;
+        }
+    }
+
+    float randVelX = -1.f;
+    float randVelY = 1.f;
+    entity->cTransform = std::make_shared<CTransform>(Vec2(ex, ey), Vec2(randVelX, randVelY), 0.0f);
+
+    entity->cShape = std::make_shared<CShape>(defaultRadius, 10, sf::Color(100, 100, 100), sf::Color(255, 255, 255), 2.0f);
 
     m_lastEnemySpawnTime = m_currentFrame;
 }
@@ -256,18 +282,27 @@ void Game::sMovement() {
     for (auto &e: m_entities.getEntities("enemy")) {
         e->cTransform->pos = e->cTransform->pos + e->cTransform->velocity;
     }
+    const sf::CircleShape& playerCircle = m_player->cShape->circle;
     if (m_player->cInput->down) {
-        m_player->cTransform->pos.y += 4.0f;
+        if (playerCircle.getPosition().y + playerCircle.getRadius() < m_window.getSize().y) {
+            m_player->cTransform->pos.y += 4.0f;
+        }
     }
     if (m_player->cInput->left) {
-        m_player->cTransform->pos.x -= 4.0f;
+        if (playerCircle.getPosition().x - playerCircle.getRadius() > 0.0f) {
+           m_player->cTransform->pos.x -= 4.0f;
+        }
+
     }
     if (m_player->cInput->up) {
-        if (m_player->cShape->circle.getPosition().y - m_player->cShape->circle.getRadius() > 0) {
+        if (playerCircle.getPosition().y - playerCircle.getRadius() > 0) {
             m_player->cTransform->pos.y -= 4.0f;
         }
     }
     if (m_player->cInput->right) {
-        m_player->cTransform->pos.x += 4.0f;
+        if (playerCircle.getPosition().x + playerCircle.getRadius() < m_window.getSize().x) {
+            m_player->cTransform->pos.x += 4.0f;
+        }
     }
 }
+

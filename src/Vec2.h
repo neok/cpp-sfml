@@ -1,6 +1,7 @@
 
 #ifndef VEC2_H
 #define VEC2_H
+#include <SFML/System/Vector2.hpp>
 
 class Vec2 {
 public:
@@ -23,6 +24,9 @@ public:
   void operator /= (const Vec2 &other);
 
   float dist(const Vec2 &other) const;
+  Vec2 normalized(const Vec2 &other) const;
+
+  Vec2 normalized(const sf::Vector2f &other) const;
 
   void print() const;
 
