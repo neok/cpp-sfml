@@ -132,11 +132,8 @@ void Game::sCollision() {
 void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2 &mousePos) {
     auto bullet = m_entities.addEntity("bullet");
     sf::Vector2f playerPos = entity->cShape->circle.getPosition();
-    // TODO move this logic to Vec2
-    Vec2 distance = Vec2(mousePos.x - playerPos.x, mousePos.y - playerPos.y);
-    float magnitude = std::sqrt(distance.x * distance.x + distance.y * distance.y);
-    Vec2 normalized = Vec2(distance.x / magnitude, distance.y / magnitude);
-    Vec2 velocity = Vec2(5.01f * normalized.x, 5.01f * normalized.y);
+    Vec2 normalized = mousePos.normalized(playerPos);
+    Vec2 velocity = Vec2(15.01f * normalized.x, 15.01f * normalized.y);
 
 
 
@@ -256,18 +253,26 @@ void Game::sMovement() {
     for (auto &e: m_entities.getEntities("enemy")) {
         e->cTransform->pos = e->cTransform->pos + e->cTransform->velocity;
     }
+    const sf::CircleShape& playerCircle = m_player->cShape->circle;
     if (m_player->cInput->down) {
-        m_player->cTransform->pos.y += 4.0f;
+        if (playerCircle.getPosition().y + playerCircle.getRadius() < m_window.getSize().y) {
+            m_player->cTransform->pos.y += 4.0f;
+        }
     }
     if (m_player->cInput->left) {
-        m_player->cTransform->pos.x -= 4.0f;
+        if (playerCircle.getPosition().x - playerCircle.getRadius() > 0.0f) {
+           m_player->cTransform->pos.x -= 4.0f;
+        }
+
     }
     if (m_player->cInput->up) {
-        if (m_player->cShape->circle.getPosition().y - m_player->cShape->circle.getRadius() > 0) {
+        if (playerCircle.getPosition().y - playerCircle.getRadius() > 0) {
             m_player->cTransform->pos.y -= 4.0f;
         }
     }
     if (m_player->cInput->right) {
-        m_player->cTransform->pos.x += 4.0f;
+        if (playerCircle.getPosition().x + playerCircle.getRadius() < m_window.getSize().x) {
+            m_player->cTransform->pos.x += 4.0f;
+        }
     }
 }
