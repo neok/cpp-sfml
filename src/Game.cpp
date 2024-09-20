@@ -7,7 +7,12 @@
 #include <fstream>
 #include <cmath> // for sqrt()
 #include <stdlib.h>
-
+float RandomFloat(float a, float b) {
+    float random = ((float) rand()) / (float) RAND_MAX;
+    float diff = b - a;
+    float r = random * diff;
+    return a + r;
+}
 
 Game::Game(const std::string &config) {
     init(config);
@@ -144,7 +149,7 @@ void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2 &mousePos) {
 }
 
 void Game::sEnemySpawner() {
-    if (m_currentFrame - m_lastEnemySpawnTime <= 10) {
+    if (m_currentFrame - m_lastEnemySpawnTime <= 100) {
         return;
     }
     spawnEnemy();
@@ -157,9 +162,33 @@ void Game::spawnEnemy() {
     float ex = rand() % m_window.getSize().x;
     float ey = rand() % m_window.getSize().y;
 
-    entity->cTransform = std::make_shared<CTransform>(Vec2(ex, ey), Vec2(1.0f, 1.2f), 0.0f);
+    auto radius = m_player->cShape->circle.getRadius();
+    m_player->cShape->circle.setOrigin(radius, radius);
 
-    entity->cShape = std::make_shared<CShape>(24.0f, 10, sf::Color(100, 100, 100), sf::Color(255, 255, 255), 2.0f);
+    sf::Vector2f playerPos = m_player->cShape->circle.getPosition();
+
+    float defaultRadius = 24.f;
+    float constRange = 30.f;
+    // do not spawn enemy on top of player
+    // algo can be improved in many ways, but for this game it's more than enough
+    if (ex > playerPos.x - radius && ex < playerPos.x + radius) {
+        ex = playerPos.x + radius + constRange;
+        if (ex + defaultRadius > static_cast<float>(m_window.getSize().x)) {
+            ex = playerPos.x - radius - constRange;
+        }
+    }
+    if (ey > playerPos.y - radius && ey < playerPos.y + radius) {
+        ey = playerPos.y + radius + constRange;
+        if (ey + defaultRadius > static_cast<float>(m_window.getSize().y)) {
+            ey = playerPos.y - radius - constRange;
+        }
+    }
+
+    float randVelX = -1.f;
+    float randVelY = 1.f;
+    entity->cTransform = std::make_shared<CTransform>(Vec2(ex, ey), Vec2(randVelX, randVelY), 0.0f);
+
+    entity->cShape = std::make_shared<CShape>(defaultRadius, 10, sf::Color(100, 100, 100), sf::Color(255, 255, 255), 2.0f);
 
     m_lastEnemySpawnTime = m_currentFrame;
 }
@@ -276,3 +305,4 @@ void Game::sMovement() {
         }
     }
 }
+
