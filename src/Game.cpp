@@ -18,13 +18,25 @@ Game::Game(const std::string &config) {
     init(config);
 }
 
+void Game::spawnEnemyParticles(std::shared_ptr<Entity> entity) {
+    sf::Vector2f position = entity->cShape->circle.getPosition();
+//todo add directions for each particle
+    // and add lifespan
+    for (unsigned int i = 0; i < entity->cShape->circle.getPointCount(); i++) {
+        auto entity = m_entities.addEntity("particle");
+        entity->cTransform = std::make_shared<CTransform>(Vec2(position.x, position.y), Vec2(i, i), 0.0f);
+        entity->cShape = std::make_shared<CShape>(5, 10, sf::Color(100, 100, 100), sf::Color(255, 255, 255), 2.0f);
+
+    }
+}
+
 void Game::init(const std::string &config) {
     // std::ifstream fin(config);
     //
     // fin >> m_window.
 
 
-    m_window.create(sf::VideoMode(1280, 720), "Ownage");
+    m_window.create(sf::VideoMode(1280, 720), "Ownage", sf::Style::Fullscreen);
     m_window.setFramerateLimit(60);
 
     spawnPlayer();
@@ -40,6 +52,7 @@ void Game::run() {
         sMovement();
         sCollision();
         sUserInput();
+        sLifespan();
         // sGUI()
 
         sRender();
@@ -80,6 +93,7 @@ void Game::sCollision() {
                 std::cout << "Collided" << std::endl;
                 // bullet->destroy();
                 enemy->destroy();
+                spawnEnemyParticles(enemy);
                 // bullet->destroy();
             }
         }
@@ -138,13 +152,13 @@ void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2 &mousePos) {
     auto bullet = m_entities.addEntity("bullet");
     sf::Vector2f playerPos = entity->cShape->circle.getPosition();
     Vec2 normalized = mousePos.normalized(playerPos);
-    Vec2 velocity = Vec2(15.01f * normalized.x, 15.01f * normalized.y);
+    Vec2 velocity = Vec2(14.01f * normalized.x, 14.01f * normalized.y);
 
 
-
+    bullet->cLifespan = std::make_shared<CLifespan>(CLifespan(150));
     bullet->cTransform = std::make_shared<CTransform>(Vec2(playerPos.x, playerPos.y), velocity, 0.0f);
 
-    bullet->cShape = std::make_shared<CShape>(12.0f, 30, sf::Color(90, 0, 95), sf::Color(255, 255, 255), 1.0f);
+    bullet->cShape = std::make_shared<CShape>(12.0f, 30, sf::Color(90, 0, 95), sf::Color(255, 255, 255), 0.0f);
 
 }
 
@@ -273,8 +287,35 @@ void Game::sUserInput() {
     }
 }
 
+void Game::sLifespan() {
+    for (auto &e : m_entities.getEntities("bullet")) {
+        // Update remaining lifespan
+        e->cLifespan->remaining -= 1;  // Assuming each frame decreases lifespan by 1 unit, adjust this to match your game's time system
+
+        if (e->cLifespan->remaining <= 0) {
+            // If the lifespan has reached zero, destroy the entity
+            // m_entities.removeEntity(e);
+            // continue;
+        }
+
+        // Calculate remaining lifespan ratio (0.0 - 1.0)
+        float lifespanRatio = static_cast<float>(e->cLifespan->remaining) / static_cast<float>(e->cLifespan->total);
+
+        // Calculate the new alpha value based on the lifespan ratio (fades from 255 to 0)
+        float alpha = 255 * lifespanRatio;
+        alpha = std::max(alpha, 0.0f);  // Ensure alpha doesn't go below 0
+
+        // Get the current color of the circle and update the alpha value
+        const sf::Color color = e->cShape->circle.getFillColor();
+        e->cShape->circle.setFillColor(sf::Color(color.r, color.g, color.b, static_cast<sf::Uint8>(alpha)));
+    }
+}
+
 
 void Game::sMovement() {
+    for (auto &e: m_entities.getEntities("particle")) {
+        e->cTransform->pos = e->cTransform->pos + e->cTransform->velocity;
+    }
     // Update the position of all entities based on their velocity
     for (auto &e: m_entities.getEntities("bullet")) {
         e->cTransform->pos = e->cTransform->pos + e->cTransform->velocity;
