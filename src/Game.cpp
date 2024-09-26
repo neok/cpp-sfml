@@ -6,12 +6,40 @@
 #include <SFML/Graphics.hpp>
 #include <fstream>
 #include <cmath>
+#include <random>
 
 float RandomFloat(float a, float b) {
     float random = ((float) rand()) / (float) RAND_MAX;
     float diff = b - a;
     float r = random * diff;
     return a + r;
+}
+
+float getRandomFloatInRange(float min, float max) {
+    static std::random_device rd;
+    static std::mt19937 generator(rd());
+
+    std::uniform_real_distribution<float> distribution(min, max);
+    float randomFloat = distribution(generator);
+
+    return std::round(randomFloat * 100.0f) / 100.0f;
+}
+
+int getRandomIntInRange(int min, int max) {
+    static std::random_device rd;
+    static std::mt19937 generator(rd());
+
+    std::uniform_int_distribution<int> distribution(min, max);
+
+    return distribution(generator);
+}
+
+sf::Color getRandomColor() {
+    int red = rand() % 256;
+    int green = rand() % 256;
+    int blue = rand() % 256;
+
+    return sf::Color(red, green, blue);
 }
 
 Game::Game(const std::string &config) {
@@ -37,7 +65,12 @@ void Game::spawnEnemyParticles(std::shared_ptr<Entity> entity) {
             1.0f
         );
 
-        particle->cShape = std::make_shared<CShape>(radius, pointCount, sf::Color(100, 100, 100), sf::Color(255, 255, 255), 2.0f);
+        particle->cShape = std::make_shared<CShape>(
+            radius,
+            pointCount,
+            entity->cShape->circle.getFillColor(),
+            entity->cShape->circle.getOutlineColor(),
+            1.0f);
         particle->cLifespan = std::make_shared<CLifespan>(130.0f);
     }
 }
@@ -48,7 +81,7 @@ void Game::init(const std::string &config) {
     // fin >> m_window.
 
 
-    m_window.create(sf::VideoMode(1280, 720), "Ownage", sf::Style::Default);
+    m_window.create(sf::VideoMode(1600, 900), "Ownage", sf::Style::Default);
     m_window.setFramerateLimit(60);
 
     spawnPlayer();
@@ -72,23 +105,7 @@ void Game::run() {
 }
 
 void Game::sCollision() {
-    for (auto &p: m_entities.getEntities("player")) {
-        float playerRadius = p->cShape->circle.getRadius();
-        p->cShape->circle.setOrigin(playerRadius, playerRadius);
-        sf::Vector2f playerPosition = p->cShape->circle.getPosition();
-        for (auto &enemy : m_entities.getEntities("enemy")) {
-            float enemyRadius = enemy->cShape->circle.getRadius();
-            enemy->cShape->circle.setOrigin(enemyRadius, enemyRadius);
-            sf::Vector2f enemyPos = enemy->cShape->circle.getPosition();
 
-            if (p->isActive() && checkCollision(playerPosition, playerRadius, enemyPos, enemyRadius)) {
-                enemy->destroy();
-                spawnEnemyParticles(enemy);
-                p->destroy();
-                spawnPlayer();
-            }
-        }
-    }
 
     for (auto &bullet: m_entities.getEntities("bullet")) {
         float bulletRadius = bullet->cShape->circle.getRadius();
@@ -150,6 +167,27 @@ void Game::sCollision() {
 
         }
     }
+
+    for (auto &p: m_entities.getEntities("player")) {
+        float playerRadius = p->cShape->circle.getRadius();
+        p->cShape->circle.setOrigin(playerRadius, playerRadius);
+        sf::Vector2f playerPosition = p->cShape->circle.getPosition();
+        for (auto &enemy : m_entities.getEntities("enemy")) {
+            float enemyRadius = enemy->cShape->circle.getRadius();
+            enemy->cShape->circle.setOrigin(enemyRadius, enemyRadius);
+            sf::Vector2f enemyPos = enemy->cShape->circle.getPosition();
+
+            if (checkCollision(playerPosition, playerRadius, enemyPos, enemyRadius)) {
+
+                spawnEnemyParticles(enemy);
+                enemy->destroy();
+
+                //set pos middle again, maybe add death counter
+                p->cTransform->pos.x = static_cast<float>(m_window.getSize().x) / 2.0f;
+                p->cTransform->pos.y = static_cast<float>(m_window.getSize().y) / 2.0f;
+            }
+        }
+    }
 }
 
 void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2 &mousePos) {
@@ -162,11 +200,11 @@ void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2 &mousePos) {
     bullet->cLifespan = std::make_shared<CLifespan>(CLifespan(150));
     bullet->cTransform = std::make_shared<CTransform>(Vec2(playerPos.x, playerPos.y), velocity, 0.0f);
 
-    bullet->cShape = std::make_shared<CShape>(12.0f, 30, sf::Color(90, 0, 95), sf::Color(255, 255, 255), 0.0f);
+    bullet->cShape = std::make_shared<CShape>(12.0f, 30, sf::Color(90, 155, 95), sf::Color(255, 255, 255), 0.0f);
 }
 
 void Game::sEnemySpawner() {
-    if (m_currentFrame - m_lastEnemySpawnTime <= 100) {
+    if (m_currentFrame - m_lastEnemySpawnTime <= 20) {
         return;
     }
     spawnEnemy();
@@ -183,8 +221,10 @@ void Game::spawnEnemy() {
 
     sf::Vector2f playerPos = m_player->cShape->circle.getPosition();
 
-    float defaultRadius = 24.f;
-    float constRange = 30.f;
+
+
+    float defaultRadius = RandomFloat(25, 55);
+    float constRange = 100.f;
     // do not spawn enemy on top of player
     // algo can be improved in many ways, but for this game it's more than enough
     if (ex > playerPos.x - radius && ex < playerPos.x + radius) {
@@ -200,12 +240,10 @@ void Game::spawnEnemy() {
         }
     }
 
-    float randVelX = -1.f;
-    float randVelY = 1.f;
-    entity->cTransform = std::make_shared<CTransform>(Vec2(ex, ey), Vec2(randVelX, randVelY), 0.0f);
-
-    entity->cShape = std::make_shared<CShape>(defaultRadius, 6, sf::Color(255, 255, 100), sf::Color(255, 255, 255),
-                                              2.0f);
+    float randVelX = getRandomFloatInRange(-3, 4);
+    float randVelY = getRandomFloatInRange(-3, 2);
+    entity->cTransform = std::make_shared<CTransform>(Vec2(ex, ey), Vec2(randVelX, randVelY), 2.0f);
+    entity->cShape = std::make_shared<CShape>(defaultRadius, getRandomIntInRange(3, 10), getRandomColor(), getRandomColor(), 1.0f);
 
     m_lastEnemySpawnTime = m_currentFrame;
 }
@@ -217,7 +255,7 @@ void Game::spawnPlayer() {
     float my = static_cast<float>(m_window.getSize().y) / 2.0f;
     entity->cTransform = std::make_shared<CTransform>(Vec2(mx, my), Vec2(0.0f, 0.0f), 0.0f);
 
-    entity->cShape = std::make_shared<CShape>(32.0f, 6, sf::Color(255, 0, 255), sf::Color(0, 255, 100), 2.0f);
+    entity->cShape = std::make_shared<CShape>(32.0f, 6, sf::Color(99, 155, 99), sf::Color(0, 255, 100), 2.0f);
 
     entity->cInput = std::make_shared<CInput>();
 
@@ -286,8 +324,6 @@ void Game::sUserInput() {
         if (event.type == sf::Event::MouseButtonPressed) {
             std::cout << event.mouseButton.button << std::endl;
             if (event.mouseButton.button == sf::Mouse::Left) {
-                std::cout << "spawn bullet" << std::endl;
-
                 spawnBullet(m_player, Vec2(static_cast<float>(event.mouseButton.x),
                                            static_cast<float>(event.mouseButton.y)));
             }
