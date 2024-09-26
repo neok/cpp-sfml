@@ -73,12 +73,20 @@ void Game::run() {
 
 void Game::sCollision() {
     for (auto &p: m_entities.getEntities("player")) {
-        sf::Vector2f position = p->cShape->circle.getPosition();
-        float radius = p->cShape->circle.getRadius();
-        if (position.y - radius < 0) {
-            std::cout << "collided" << std::endl;
-            position.y = radius;
-            p->cShape->circle.setPosition(position);
+        float playerRadius = p->cShape->circle.getRadius();
+        p->cShape->circle.setOrigin(playerRadius, playerRadius);
+        sf::Vector2f playerPosition = p->cShape->circle.getPosition();
+        for (auto &enemy : m_entities.getEntities("enemy")) {
+            float enemyRadius = enemy->cShape->circle.getRadius();
+            enemy->cShape->circle.setOrigin(enemyRadius, enemyRadius);
+            sf::Vector2f enemyPos = enemy->cShape->circle.getPosition();
+
+            if (p->isActive() && checkCollision(playerPosition, playerRadius, enemyPos, enemyRadius)) {
+                enemy->destroy();
+                spawnEnemyParticles(enemy);
+                p->destroy();
+                spawnPlayer();
+            }
         }
     }
 
@@ -93,12 +101,8 @@ void Game::sCollision() {
             enemy->cShape->circle.setOrigin(enemyRadius, enemyRadius);
 
             sf::Vector2f enemyPos = enemy->cShape->circle.getPosition();
-            float a = bulletPos.x - enemyPos.x;
-            float b = bulletPos.y - enemyPos.y;
-            float distanceSquared = (a * a) + (b * b);
-            float radiusSum = bulletRadius + enemyRadius;
 
-            if (distanceSquared <= (radiusSum * radiusSum)) {
+            if (checkCollision(enemyPos, enemyRadius, bulletPos, bulletRadius)) {
                 // Collision detected
                 std::cout << "Collided" << std::endl;
                 enemy->destroy();
@@ -200,7 +204,7 @@ void Game::spawnEnemy() {
     float randVelY = 1.f;
     entity->cTransform = std::make_shared<CTransform>(Vec2(ex, ey), Vec2(randVelX, randVelY), 0.0f);
 
-    entity->cShape = std::make_shared<CShape>(defaultRadius, 4, sf::Color(100, 100, 100), sf::Color(255, 255, 255),
+    entity->cShape = std::make_shared<CShape>(defaultRadius, 6, sf::Color(255, 255, 100), sf::Color(255, 255, 255),
                                               2.0f);
 
     m_lastEnemySpawnTime = m_currentFrame;
@@ -346,4 +350,14 @@ void Game::sMovement() {
             m_player->cTransform->pos.x += 4.0f;
         }
     }
+}
+
+bool Game::checkCollision(const sf::Vector2f& pos1, float radius1, const sf::Vector2f& pos2, float radius2) {
+    float a = pos1.x - pos2.x;
+    float b = pos1.y - pos2.y;
+
+    float distanceSquared = (a * a) + (b * b);
+    float radiusSum = radius1 + radius2;
+
+    return distanceSquared <= (radiusSum * radiusSum);
 }
