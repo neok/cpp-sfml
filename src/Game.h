@@ -41,6 +41,8 @@ class Game {
     void setPaused(bool paused);
 
     void sMovement();      // System: Entity position / mov updated
+    bool checkCollision(const sf::Vector2f &pos1, float radius1, const sf::Vector2f &pos2, float radius2);
+
     void sUserInput();     // System: User input
     void sLifespan();      // System: lifespan
     void sRender();        // System: render /drawing
