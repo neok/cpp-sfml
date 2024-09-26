@@ -51,6 +51,7 @@ class Game {
     void sEnemySpawner();  // System: spawn enemies
     void sCollision();     // System: collisions
 
+    void showScore();
     void spawnPlayer();
     void spawnEnemy();
     void spawnEnemyParticles(std::shared_ptr<Entity> entity);

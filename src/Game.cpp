@@ -80,11 +80,18 @@ void Game::init(const std::string &config) {
     //
     // fin >> m_window.
 
-
+    sf::Font myfont;
+    if (!myfont.loadFromFile("../fonts/arial.ttf")) {
+        std::cerr << "Failed to load font" << std::endl;
+        exit(-1);
+    }
+    m_font = myfont;
     m_window.create(sf::VideoMode(1600, 900), "Ownage", sf::Style::Default);
     m_window.setFramerateLimit(60);
 
     spawnPlayer();
+    showScore();
+
 }
 
 void Game::run() {
@@ -125,6 +132,7 @@ void Game::sCollision() {
                 enemy->destroy();
                 spawnEnemyParticles(enemy);
                 bullet->destroy();
+                m_player->cScore->score += 100;
             }
         }
     }
@@ -248,6 +256,17 @@ void Game::spawnEnemy() {
     m_lastEnemySpawnTime = m_currentFrame;
 }
 
+void Game::showScore() {
+    sf::Text text;
+    text.setFont(m_font); // font is a sf::Font
+    text.setString("Score: ");
+    text.setCharacterSize(24); // in pixels, not points!
+    text.setFillColor(sf::Color(255, 255, 255));
+    text.setStyle(sf::Text::Bold);
+
+    m_text = text;
+}
+
 
 void Game::spawnPlayer() {
     auto entity = m_entities.addEntity("player");
@@ -258,12 +277,16 @@ void Game::spawnPlayer() {
     entity->cShape = std::make_shared<CShape>(32.0f, 6, sf::Color(99, 155, 99), sf::Color(0, 255, 100), 2.0f);
 
     entity->cInput = std::make_shared<CInput>();
+    entity->cScore = std::make_shared<CScore>(0);
 
     m_player = entity;
 }
 
 void Game::sRender() {
     m_window.clear(sf::Color::Black);
+    m_text.setPosition(130, 130);
+    m_text.setString("Score: " + std::to_string(m_player->cScore->score));
+    m_window.draw(m_text);
     // std::cout << "Entities size" << m_entities.getEntities().size() << std::endl;
     for (auto &e: m_entities.getEntities()) {
         e->cShape->circle.setPosition(e->cTransform->pos.x, e->cTransform->pos.y);
