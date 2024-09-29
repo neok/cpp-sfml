@@ -21,6 +21,10 @@ struct BulletConfig {
     float S;
 };
 
+const float LIGHTNING_RANGE = 250.0f;  // Maximum distance between chained enemies
+const float LIGHTNING_DURATION = 0.2f; // Duration of each lightning segment
+
+
 class Game {
     sf::RenderWindow m_window;
     EntityManager    m_entities;
@@ -34,6 +38,10 @@ class Game {
     int              m_lastEnemySpawnTime = 0;
     bool             m_paused = false; //whether we update game logic
     bool             m_running = true; // whether game is running
+    sf::Clock        m_bfgCooldown;
+    sf::Clock        m_lightningClock;
+    sf::VertexArray  m_lightningChain = sf::VertexArray(sf::Lines);
+    bool             m_isLightningActive = false;
     std::shared_ptr<Entity> m_player;
 
 
@@ -54,9 +62,9 @@ class Game {
     void showScore();
     void spawnPlayer();
     void spawnEnemy();
-    void spawnEnemyParticles(std::shared_ptr<Entity> entity);
+    void spawnEnemyParticles(std::shared_ptr<Entity> entity, float lifeSpan);
     void spawnBullet(std::shared_ptr<Entity> entity, const Vec2 &mousePos);
-    void spawnBFG(std::shared_ptr<Entity> entity);
+    void spawnBFG(sf::Vector2f startPos);
 public:
     explicit Game(const std::string &config);
 
