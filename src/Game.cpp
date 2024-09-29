@@ -7,6 +7,7 @@
 #include <fstream>
 #include <cmath>
 #include <random>
+#include <vector>
 
 float RandomFloat(float a, float b) {
     float random = ((float) rand()) / (float) RAND_MAX;
@@ -34,6 +35,11 @@ int getRandomIntInRange(int min, int max) {
     return distribution(generator);
 }
 
+float distance(sf::Vector2f p1, sf::Vector2f p2) {
+    return std::sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y));
+}
+
+
 sf::Color getRandomColor() {
     int red = rand() % 256;
     int green = rand() % 256;
@@ -46,7 +52,7 @@ Game::Game(const std::string &config) {
     init(config);
 }
 
-void Game::spawnEnemyParticles(std::shared_ptr<Entity> entity) {
+void Game::spawnEnemyParticles(std::shared_ptr<Entity> entity, float lifeSpan = 130.f) {
     sf::Vector2f position = entity->cShape->circle.getPosition();
     unsigned int pointCount = entity->cShape->circle.getPointCount();
     float radius = entity->cShape->circle.getRadius() / 3;
@@ -71,7 +77,7 @@ void Game::spawnEnemyParticles(std::shared_ptr<Entity> entity) {
             entity->cShape->circle.getFillColor(),
             entity->cShape->circle.getOutlineColor(),
             1.0f);
-        particle->cLifespan = std::make_shared<CLifespan>(130.0f);
+        particle->cLifespan = std::make_shared<CLifespan>(lifeSpan);
     }
 }
 
@@ -127,10 +133,8 @@ void Game::sCollision() {
             sf::Vector2f enemyPos = enemy->cShape->circle.getPosition();
 
             if (checkCollision(enemyPos, enemyRadius, bulletPos, bulletRadius)) {
-                // Collision detected
-                std::cout << "Collided" << std::endl;
                 enemy->destroy();
-                spawnEnemyParticles(enemy);
+                spawnEnemyParticles(enemy, 130.f);
                 bullet->destroy();
                 m_player->cScore->score += 100;
             }
@@ -187,7 +191,7 @@ void Game::sCollision() {
 
             if (checkCollision(playerPosition, playerRadius, enemyPos, enemyRadius)) {
 
-                spawnEnemyParticles(enemy);
+                spawnEnemyParticles(enemy, 130.f);
                 enemy->destroy();
 
                 //set pos middle again, maybe add death counter
@@ -197,6 +201,40 @@ void Game::sCollision() {
         }
     }
 }
+
+void Game::spawnBFG(sf::Vector2f startPos) {
+    m_lightningChain.clear();
+    sf::Vector2f currentPos = startPos;
+    m_lightningChain.append(sf::Vertex(m_player->cShape->circle.getPosition(), sf::Color::Red));
+    m_lightningChain.append(sf::Vertex(startPos, sf::Color::White));
+    for (int chainCount = 0; chainCount < 5; ++chainCount) {
+        float minDistance = LIGHTNING_RANGE;
+        std::shared_ptr<Entity> closestEnemy = nullptr;
+
+        for (auto &enemy : m_entities.getEntities("enemy")) {
+            float radius = enemy->cShape->circle.getRadius();
+            enemy->cShape->circle.setOrigin(radius, radius);
+            sf::Vector2f enemyPos = enemy->cShape->circle.getPosition();
+            float dist = distance(currentPos, enemyPos);
+            std::cout << dist << std::endl;
+            if (dist < minDistance && enemy->isActive()) {
+                minDistance = dist;
+                closestEnemy = enemy;
+            }
+        }
+
+        if (!closestEnemy) break;
+
+        closestEnemy->destroy();
+        spawnEnemyParticles(closestEnemy, 40.f);
+        sf::Vector2f enemyPos = closestEnemy->cShape->circle.getPosition();
+
+        m_lightningChain.append(sf::Vertex(currentPos, sf::Color::Blue));  // Mid-point with offset
+        m_lightningChain.append(sf::Vertex(enemyPos, sf::Color::Cyan)); // Next enemy position
+        currentPos = closestEnemy->cShape->circle.getPosition();
+    }
+}
+
 
 void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2 &mousePos) {
     auto bullet = m_entities.addEntity("bullet");
@@ -284,9 +322,6 @@ void Game::spawnPlayer() {
 
 void Game::sRender() {
     m_window.clear(sf::Color::Black);
-    m_text.setPosition(130, 130);
-    m_text.setString("Score: " + std::to_string(m_player->cScore->score));
-    m_window.draw(m_text);
     // std::cout << "Entities size" << m_entities.getEntities().size() << std::endl;
     for (auto &e: m_entities.getEntities()) {
         e->cShape->circle.setPosition(e->cTransform->pos.x, e->cTransform->pos.y);
@@ -295,6 +330,20 @@ void Game::sRender() {
         e->cShape->circle.setRotation(e->cTransform->angle);
         m_window.draw(e->cShape->circle);
     }
+    m_text.setPosition(100, 100);
+    m_text.setString("Score: " + std::to_string(m_player->cScore->score));
+    m_window.draw(m_text);
+    if (m_isLightningActive) {
+        m_window.draw(m_lightningChain);
+    }
+
+    if (m_isLightningActive) {
+        if (m_lightningClock.getElapsedTime().asSeconds() > 2.0f) {
+            m_lightningChain.clear();
+            m_isLightningActive = false;
+        }
+    }
+
     m_window.display();
 }
 
@@ -349,6 +398,16 @@ void Game::sUserInput() {
             if (event.mouseButton.button == sf::Mouse::Left) {
                 spawnBullet(m_player, Vec2(static_cast<float>(event.mouseButton.x),
                                            static_cast<float>(event.mouseButton.y)));
+            }
+
+            if (event.mouseButton.button == sf::Mouse::Right) {
+                if (m_bfgCooldown.getElapsedTime().asSeconds() > 2) {
+                    sf::Vector2f mousePos = m_window.mapPixelToCoords(sf::Mouse::getPosition(m_window));
+                    spawnBFG(mousePos);
+                    m_lightningClock.restart();
+                    m_bfgCooldown.restart();
+                    m_isLightningActive = true;
+                }
             }
         }
     }
