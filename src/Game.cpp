@@ -8,6 +8,12 @@
 #include <cmath>
 #include <random>
 #include <vector>
+#include "imgui.h"
+#include "imgui-SFML.h"
+// #include "imgui.h"
+// #include "imgui_impl_win32.h"
+// #include "imgui_impl_dx11.h"
+
 
 float RandomFloat(float a, float b) {
     float random = ((float) rand()) / (float) RAND_MAX;
@@ -82,9 +88,6 @@ void Game::spawnEnemyParticles(std::shared_ptr<Entity> entity, float lifeSpan = 
 }
 
 void Game::init(const std::string &config) {
-    // std::ifstream fin(config);
-    //
-    // fin >> m_window.
 
     sf::Font myfont;
     if (!myfont.loadFromFile("../fonts/arial.ttf")) {
@@ -94,6 +97,10 @@ void Game::init(const std::string &config) {
     m_font = myfont;
     m_window.create(sf::VideoMode(1600, 900), "Ownage", sf::Style::Default);
     m_window.setFramerateLimit(60);
+    if (!ImGui::SFML::Init(m_window)) {
+        std::cout << "Unable to init" << std::endl;
+        exit(-1);
+    }
 
     spawnPlayer();
     showScore();
@@ -103,8 +110,6 @@ void Game::init(const std::string &config) {
 void Game::run() {
     while (m_window.isOpen()) {
         m_entities.update();
-        sf::Event event;
-
         sEnemySpawner();
         sMovement();
         sCollision();
@@ -115,6 +120,8 @@ void Game::run() {
         sRender();
         m_currentFrame++;
     }
+
+    ImGui::SFML::Shutdown();
 }
 
 void Game::sCollision() {
@@ -134,7 +141,7 @@ void Game::sCollision() {
 
             if (checkCollision(enemyPos, enemyRadius, bulletPos, bulletRadius)) {
                 enemy->destroy();
-                spawnEnemyParticles(enemy, 130.f);
+                spawnEnemyParticles(enemy, 100.f);
                 bullet->destroy();
                 m_player->cScore->score += 100;
             }
@@ -202,12 +209,12 @@ void Game::sCollision() {
     }
 }
 
-void Game::spawnBFG(sf::Vector2f startPos) {
+void Game::useUltimate(sf::Vector2f startPos) {
     m_lightningChain.clear();
     sf::Vector2f currentPos = startPos;
     m_lightningChain.append(sf::Vertex(m_player->cShape->circle.getPosition(), sf::Color::Red));
     m_lightningChain.append(sf::Vertex(startPos, sf::Color::White));
-    for (int chainCount = 0; chainCount < 5; ++chainCount) {
+    for (int chainCount = 0; chainCount < 10; ++chainCount) {
         float minDistance = LIGHTNING_RANGE;
         std::shared_ptr<Entity> closestEnemy = nullptr;
 
@@ -226,6 +233,7 @@ void Game::spawnBFG(sf::Vector2f startPos) {
         if (!closestEnemy) break;
 
         closestEnemy->destroy();
+        m_player->cScore->score += 100;
         spawnEnemyParticles(closestEnemy, 40.f);
         sf::Vector2f enemyPos = closestEnemy->cShape->circle.getPosition();
 
@@ -250,7 +258,7 @@ void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2 &mousePos) {
 }
 
 void Game::sEnemySpawner() {
-    if (m_currentFrame - m_lastEnemySpawnTime <= 20) {
+    if (m_currentFrame - m_lastEnemySpawnTime <= m_enemySpawnCooldown) {
         return;
     }
     spawnEnemy();
@@ -321,6 +329,23 @@ void Game::spawnPlayer() {
 }
 
 void Game::sRender() {
+    ImGui::SFML::Update(m_window, m_deltaClock.restart());
+
+    // Create ImGui windows and widgets here
+
+    ImGui::Begin("Hello, world!");
+    if (ImGui::Button("Decrease spawn timer")) {
+        m_enemySpawnCooldown += 100;
+    }
+    if (ImGui::Button("Increase spawn timer")) {
+        if (m_enemySpawnCooldown <= 0 || m_enemySpawnCooldown - 100 <= 0) {
+            m_enemySpawnCooldown = 0;
+        } else {
+            m_enemySpawnCooldown -= 100;
+        }
+    }
+
+    ImGui::End();
     m_window.clear(sf::Color::Black);
     // std::cout << "Entities size" << m_entities.getEntities().size() << std::endl;
     for (auto &e: m_entities.getEntities()) {
@@ -344,12 +369,17 @@ void Game::sRender() {
         }
     }
 
+    ImGui::SFML::Render(m_window);
     m_window.display();
 }
 
 void Game::sUserInput() {
     sf::Event event{};
     while (m_window.pollEvent(event)) {
+        ImGui::SFML::ProcessEvent(m_window, event);
+        if (ImGui::GetIO().WantCaptureMouse || ImGui::GetIO().WantCaptureKeyboard) {
+            continue;
+        }
         if (event.type == sf::Event::Closed) {
             m_window.close();
         }
@@ -403,7 +433,7 @@ void Game::sUserInput() {
             if (event.mouseButton.button == sf::Mouse::Right) {
                 if (m_bfgCooldown.getElapsedTime().asSeconds() > 2) {
                     sf::Vector2f mousePos = m_window.mapPixelToCoords(sf::Mouse::getPosition(m_window));
-                    spawnBFG(mousePos);
+                    useUltimate(mousePos);
                     m_lightningClock.restart();
                     m_bfgCooldown.restart();
                     m_isLightningActive = true;
