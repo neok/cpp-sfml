@@ -63,6 +63,9 @@ class Game {
 
     void showScore();
     void spawnPlayer();
+
+    void sGUI();
+
     void spawnEnemy();
     void spawnEnemyParticles(std::shared_ptr<Entity> entity, float lifeSpan);
     void spawnBullet(std::shared_ptr<Entity> entity, const Vec2 &mousePos);

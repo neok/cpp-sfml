@@ -10,40 +10,11 @@
 #include <vector>
 #include "imgui.h"
 #include "imgui-SFML.h"
+#include "Utils.h"
 // #include "imgui.h"
 // #include "imgui_impl_win32.h"
 // #include "imgui_impl_dx11.h"
 
-
-float RandomFloat(float a, float b) {
-    float random = ((float) rand()) / (float) RAND_MAX;
-    float diff = b - a;
-    float r = random * diff;
-    return a + r;
-}
-
-float getRandomFloatInRange(float min, float max) {
-    static std::random_device rd;
-    static std::mt19937 generator(rd());
-
-    std::uniform_real_distribution<float> distribution(min, max);
-    float randomFloat = distribution(generator);
-
-    return std::round(randomFloat * 100.0f) / 100.0f;
-}
-
-int getRandomIntInRange(int min, int max) {
-    static std::random_device rd;
-    static std::mt19937 generator(rd());
-
-    std::uniform_int_distribution<int> distribution(min, max);
-
-    return distribution(generator);
-}
-
-float distance(sf::Vector2f p1, sf::Vector2f p2) {
-    return std::sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y));
-}
 
 
 sf::Color getRandomColor() {
@@ -115,7 +86,7 @@ void Game::run() {
         sCollision();
         sUserInput();
         sLifespan();
-        // sGUI()
+        sGUI();
 
         sRender();
         m_currentFrame++;
@@ -328,12 +299,9 @@ void Game::spawnPlayer() {
     m_player = entity;
 }
 
-void Game::sRender() {
+void Game::sGUI() {
     ImGui::SFML::Update(m_window, m_deltaClock.restart());
-
-    // Create ImGui windows and widgets here
-
-    ImGui::Begin("Hello, world!");
+    ImGui::Begin("Game settings");
     if (ImGui::Button("Decrease spawn timer")) {
         m_enemySpawnCooldown += 100;
     }
@@ -346,6 +314,10 @@ void Game::sRender() {
     }
 
     ImGui::End();
+}
+
+void Game::sRender() {
+
     m_window.clear(sf::Color::Black);
     // std::cout << "Entities size" << m_entities.getEntities().size() << std::endl;
     for (auto &e: m_entities.getEntities()) {

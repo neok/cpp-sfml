@@ -22,6 +22,7 @@ find_package(SFML 2.6 COMPONENTS graphics window system REQUIRED)
 add_executable(${PROJECT_NAME}
         WIN32
         src/main.cpp
+        src/Utils.cpp
         src/EntityManager.cpp
         src/Game.cpp
         src/Vec2.cpp
