@@ -38,6 +38,8 @@ class Game {
     int              m_lastEnemySpawnTime = 0;
     bool             m_paused = false; //whether we update game logic
     bool             m_running = true; // whether game is running
+    int              m_enemySpawnCooldown = 20;
+    sf::Clock        m_deltaClock;
     sf::Clock        m_bfgCooldown;
     sf::Clock        m_lightningClock;
     sf::VertexArray  m_lightningChain = sf::VertexArray(sf::Lines);
@@ -64,7 +66,7 @@ class Game {
     void spawnEnemy();
     void spawnEnemyParticles(std::shared_ptr<Entity> entity, float lifeSpan);
     void spawnBullet(std::shared_ptr<Entity> entity, const Vec2 &mousePos);
-    void spawnBFG(sf::Vector2f startPos);
+    void useUltimate(sf::Vector2f startPos);
 public:
     explicit Game(const std::string &config);
 
