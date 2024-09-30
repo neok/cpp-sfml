@@ -110,6 +110,36 @@ void Game::sCollision() {
         }
     }
 
+    // chain lightning logic
+    if (m_isLightningActive && !m_chainLightningFinished) {
+        for (int chainCount = 0; chainCount < 5; ++chainCount) {
+            float minDistance = LIGHTNING_RANGE;
+            std::shared_ptr<Entity> closestEnemy = nullptr;
+
+            for (auto &enemy : m_entities.getEntities(ENEMY)) {
+                float radius = enemy->cShape->circle.getRadius();
+                enemy->cShape->circle.setOrigin(radius, radius);
+                sf::Vector2f enemyPos = enemy->cShape->circle.getPosition();
+                float dist = distance(m_lightningStartPos, enemyPos);
+                if (dist < minDistance && enemy->isActive()) {
+                    minDistance = dist;
+                    closestEnemy = enemy;
+                }
+            }
+
+            if (!closestEnemy) break;
+
+            closestEnemy->destroy();
+            m_player->cScore->score += 100;
+            spawnEnemyParticles(closestEnemy, 40.f);
+            sf::Vector2f enemyPos = closestEnemy->cShape->circle.getPosition();
+
+            m_lightningChain.append(sf::Vertex(m_lightningStartPos, sf::Color::Blue));  // Mid-point with offset
+            m_lightningChain.append(sf::Vertex(enemyPos, sf::Color::Cyan)); // Next enemy position
+            m_lightningStartPos = closestEnemy->cShape->circle.getPosition();
+        }
+        m_chainLightningFinished = true;
+    }
 
     auto windowSizeY = static_cast<float>(m_window.getSize().y);
     auto windowSizeX = static_cast<float>(m_window.getSize().x);
@@ -173,35 +203,9 @@ void Game::sCollision() {
 
 void Game::useUltimate(sf::Vector2f startPos) {
     m_lightningChain.clear();
-    sf::Vector2f currentPos = startPos;
+    m_lightningStartPos = startPos;
     m_lightningChain.append(sf::Vertex(m_player->cShape->circle.getPosition(), sf::Color::Red));
     m_lightningChain.append(sf::Vertex(startPos, sf::Color::White));
-    for (int chainCount = 0; chainCount < 10; ++chainCount) {
-        float minDistance = LIGHTNING_RANGE;
-        std::shared_ptr<Entity> closestEnemy = nullptr;
-
-        for (auto &enemy : m_entities.getEntities(ENEMY)) {
-            float radius = enemy->cShape->circle.getRadius();
-            enemy->cShape->circle.setOrigin(radius, radius);
-            sf::Vector2f enemyPos = enemy->cShape->circle.getPosition();
-            float dist = distance(currentPos, enemyPos);
-            if (dist < minDistance && enemy->isActive()) {
-                minDistance = dist;
-                closestEnemy = enemy;
-            }
-        }
-
-        if (!closestEnemy) break;
-
-        closestEnemy->destroy();
-        m_player->cScore->score += 100;
-        spawnEnemyParticles(closestEnemy, 40.f);
-        sf::Vector2f enemyPos = closestEnemy->cShape->circle.getPosition();
-
-        m_lightningChain.append(sf::Vertex(currentPos, sf::Color::Blue));  // Mid-point with offset
-        m_lightningChain.append(sf::Vertex(enemyPos, sf::Color::Cyan)); // Next enemy position
-        currentPos = closestEnemy->cShape->circle.getPosition();
-    }
 }
 
 
@@ -326,7 +330,9 @@ void Game::sRender() {
     if (m_isLightningActive) {
         if (m_lightningClock.getElapsedTime().asSeconds() > 2.0f) {
             m_lightningChain.clear();
+            m_lightningStartPos = sf::Vector2f(0, 0);
             m_isLightningActive = false;
+            m_chainLightningFinished = false;
         }
     }
 

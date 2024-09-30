@@ -29,11 +29,15 @@ class Game {
     bool             m_paused = false; //whether we update game logic
     bool             m_running = true; // whether game is running
     int              m_enemySpawnCooldown = 20;
+
+    // todo move into a separate config
     sf::Clock        m_deltaClock;
     sf::Clock        m_bfgCooldown;
     sf::Clock        m_lightningClock;
+    sf::Vector2f     m_lightningStartPos;
     sf::VertexArray  m_lightningChain = sf::VertexArray(sf::Lines);
     bool             m_isLightningActive = false;
+    bool             m_chainLightningFinished = false;
     std::shared_ptr<Entity> m_player;
 
 
