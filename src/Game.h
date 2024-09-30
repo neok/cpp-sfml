@@ -7,19 +7,11 @@
 #define GAME_H
 
 struct PlayerConfig {
-    int SR, CR, FR, FG, FB, OR, OG, OB, OT, V;
-    float S;
+   float size;
+   int radius;
+
 };
 
-struct EnemyConfig {
-    int SR, CR, OR, OG, OB, OT, VMIN, VMAX, L, SI;
-    float SMIN, SMAX;
-};
-
-struct BulletConfig {
-    int SR, CR, FR, FG, FB, OR, OG, OB, OT, V, L;
-    float S;
-};
 
 const float LIGHTNING_RANGE = 250.0f;  // Maximum distance between chained enemies
 const float LIGHTNING_DURATION = 0.2f; // Duration of each lightning segment
@@ -31,8 +23,6 @@ class Game {
     sf::Font         m_font;
     sf::Text         m_text;
     PlayerConfig     m_playerConfig{};
-    EnemyConfig      m_enemyConfig{};
-    BulletConfig     m_bulletConfig{};
     int              m_score = 0;
     int              m_currentFrame = 0;
     int              m_lastEnemySpawnTime = 0;

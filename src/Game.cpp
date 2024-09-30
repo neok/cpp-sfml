@@ -11,19 +11,11 @@
 #include "imgui.h"
 #include "imgui-SFML.h"
 #include "Utils.h"
-// #include "imgui.h"
-// #include "imgui_impl_win32.h"
-// #include "imgui_impl_dx11.h"
 
-
-
-sf::Color getRandomColor() {
-    int red = rand() % 256;
-    int green = rand() % 256;
-    int blue = rand() % 256;
-
-    return sf::Color(red, green, blue);
-}
+const std::string PLAYER   = "player";
+const std::string ENEMY    = "enemy";
+const std::string BULLET   = "bullet";
+const std::string PARTICLE = "particle";
 
 Game::Game(const std::string &config) {
     init(config);
@@ -37,7 +29,7 @@ void Game::spawnEnemyParticles(std::shared_ptr<Entity> entity, float lifeSpan = 
     float angleStep = 360.0f / pointCount;
 
     for (unsigned int i = 0; i < pointCount; i++) {
-        auto particle = m_entities.addEntity("particle");
+        auto particle = m_entities.addEntity(PARTICLE);
         float angle = i * angleStep * (3.14159f / 180.0f); // Convert degrees to radians
         float dirX = std::cos(angle);
         float dirY = std::sin(angle);
@@ -72,6 +64,8 @@ void Game::init(const std::string &config) {
         std::cout << "Unable to init" << std::endl;
         exit(-1);
     }
+    m_playerConfig.size = 10.f;
+    m_playerConfig.radius = 3;
 
     spawnPlayer();
     showScore();
@@ -87,7 +81,6 @@ void Game::run() {
         sUserInput();
         sLifespan();
         sGUI();
-
         sRender();
         m_currentFrame++;
     }
@@ -96,15 +89,13 @@ void Game::run() {
 }
 
 void Game::sCollision() {
-
-
-    for (auto &bullet: m_entities.getEntities("bullet")) {
+    for (auto &bullet: m_entities.getEntities(BULLET)) {
         float bulletRadius = bullet->cShape->circle.getRadius();
         bullet->cShape->circle.setOrigin(bulletRadius, bulletRadius);
         sf::Vector2f bulletPos = bullet->cShape->circle.getPosition();
 
 
-        for (auto &enemy: m_entities.getEntities("enemy")) {
+        for (auto &enemy: m_entities.getEntities(ENEMY)) {
             float enemyRadius = enemy->cShape->circle.getRadius();
             enemy->cShape->circle.setOrigin(enemyRadius, enemyRadius);
 
@@ -123,7 +114,7 @@ void Game::sCollision() {
     auto windowSizeY = static_cast<float>(m_window.getSize().y);
     auto windowSizeX = static_cast<float>(m_window.getSize().x);
 
-    for (auto &e: m_entities.getEntities("enemy")) {
+    for (auto &e: m_entities.getEntities(ENEMY)) {
         sf::Vector2f position = e->cShape->circle.getPosition();
         float radius = e->cShape->circle.getRadius();
 
@@ -158,11 +149,11 @@ void Game::sCollision() {
         }
     }
 
-    for (auto &p: m_entities.getEntities("player")) {
+    for (auto &p: m_entities.getEntities(PLAYER)) {
         float playerRadius = p->cShape->circle.getRadius();
         p->cShape->circle.setOrigin(playerRadius, playerRadius);
         sf::Vector2f playerPosition = p->cShape->circle.getPosition();
-        for (auto &enemy : m_entities.getEntities("enemy")) {
+        for (auto &enemy : m_entities.getEntities(ENEMY)) {
             float enemyRadius = enemy->cShape->circle.getRadius();
             enemy->cShape->circle.setOrigin(enemyRadius, enemyRadius);
             sf::Vector2f enemyPos = enemy->cShape->circle.getPosition();
@@ -189,12 +180,11 @@ void Game::useUltimate(sf::Vector2f startPos) {
         float minDistance = LIGHTNING_RANGE;
         std::shared_ptr<Entity> closestEnemy = nullptr;
 
-        for (auto &enemy : m_entities.getEntities("enemy")) {
+        for (auto &enemy : m_entities.getEntities(ENEMY)) {
             float radius = enemy->cShape->circle.getRadius();
             enemy->cShape->circle.setOrigin(radius, radius);
             sf::Vector2f enemyPos = enemy->cShape->circle.getPosition();
             float dist = distance(currentPos, enemyPos);
-            std::cout << dist << std::endl;
             if (dist < minDistance && enemy->isActive()) {
                 minDistance = dist;
                 closestEnemy = enemy;
@@ -216,11 +206,10 @@ void Game::useUltimate(sf::Vector2f startPos) {
 
 
 void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2 &mousePos) {
-    auto bullet = m_entities.addEntity("bullet");
+    auto bullet = m_entities.addEntity(BULLET);
     sf::Vector2f playerPos = entity->cShape->circle.getPosition();
     Vec2 normalized = mousePos.normalized(playerPos);
     Vec2 velocity = Vec2(14.01f * normalized.x, 14.01f * normalized.y);
-
 
     bullet->cLifespan = std::make_shared<CLifespan>(CLifespan(150));
     bullet->cTransform = std::make_shared<CTransform>(Vec2(playerPos.x, playerPos.y), velocity, 0.0f);
@@ -237,7 +226,7 @@ void Game::sEnemySpawner() {
 
 
 void Game::spawnEnemy() {
-    auto entity = m_entities.addEntity("enemy");
+    auto entity = m_entities.addEntity(ENEMY);
     float ex = rand() % m_window.getSize().x;
     float ey = rand() % m_window.getSize().y;
 
@@ -286,12 +275,12 @@ void Game::showScore() {
 
 
 void Game::spawnPlayer() {
-    auto entity = m_entities.addEntity("player");
+    auto entity = m_entities.addEntity(PLAYER);
     float mx = static_cast<float>(m_window.getSize().x) / 2.0f;
     float my = static_cast<float>(m_window.getSize().y) / 2.0f;
     entity->cTransform = std::make_shared<CTransform>(Vec2(mx, my), Vec2(0.0f, 0.0f), 0.0f);
 
-    entity->cShape = std::make_shared<CShape>(32.0f, 6, sf::Color(99, 155, 99), sf::Color(0, 255, 100), 2.0f);
+    entity->cShape = std::make_shared<CShape>(m_playerConfig.size, m_playerConfig.radius, sf::Color(99, 155, 99), sf::Color(0, 255, 100), 2.0f);
 
     entity->cInput = std::make_shared<CInput>();
     entity->cScore = std::make_shared<CScore>(0);
@@ -396,7 +385,7 @@ void Game::sUserInput() {
         }
 
         if (event.type == sf::Event::MouseButtonPressed) {
-            std::cout << event.mouseButton.button << std::endl;
+            // std::cout << event.mouseButton.button << std::endl;
             if (event.mouseButton.button == sf::Mouse::Left) {
                 spawnBullet(m_player, Vec2(static_cast<float>(event.mouseButton.x),
                                            static_cast<float>(event.mouseButton.y)));
@@ -439,14 +428,14 @@ void Game::sLifespan() {
 
 
 void Game::sMovement() {
-    for (auto &e: m_entities.getEntities("particle")) {
+    for (auto &e: m_entities.getEntities(PARTICLE)) {
         e->cTransform->pos = e->cTransform->pos + e->cTransform->velocity;
     }
     // Update the position of all entities based on their velocity
-    for (auto &e: m_entities.getEntities("bullet")) {
+    for (auto &e: m_entities.getEntities(BULLET)) {
         e->cTransform->pos = e->cTransform->pos + e->cTransform->velocity;
     }
-    for (auto &e: m_entities.getEntities("enemy")) {
+    for (auto &e: m_entities.getEntities(ENEMY)) {
         e->cTransform->pos = e->cTransform->pos + e->cTransform->velocity;
     }
     const sf::CircleShape &playerCircle = m_player->cShape->circle;

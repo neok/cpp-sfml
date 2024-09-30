@@ -35,3 +35,12 @@ int getRandomIntInRange(int min, int max) {
 float distance(sf::Vector2f p1, sf::Vector2f p2) {
     return std::sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y));
 }
+
+sf::Color getRandomColor() {
+    int red = rand() % 256;
+    int green = rand() % 256;
+    int blue = rand() % 256;
+
+    return sf::Color(red, green, blue);
+}
+
