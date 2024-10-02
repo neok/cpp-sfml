@@ -7,9 +7,9 @@
 #define GAME_H
 
 struct PlayerConfig {
-   float size;
-   int radius;
-
+    float size;
+    int radius;
+    float color[4] = { 0.0f, 1.0f, 0.0f, 1.0f };
 };
 
 

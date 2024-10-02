@@ -64,8 +64,8 @@ void Game::init(const std::string &config) {
         std::cout << "Unable to init" << std::endl;
         exit(-1);
     }
-    m_playerConfig.size = 10.f;
-    m_playerConfig.radius = 3;
+    m_playerConfig.size = 20.f;
+    m_playerConfig.radius = 10;
 
     spawnPlayer();
     showScore();
@@ -284,7 +284,7 @@ void Game::spawnPlayer() {
     float my = static_cast<float>(m_window.getSize().y) / 2.0f;
     entity->cTransform = std::make_shared<CTransform>(Vec2(mx, my), Vec2(0.0f, 0.0f), 0.0f);
 
-    entity->cShape = std::make_shared<CShape>(m_playerConfig.size, m_playerConfig.radius, sf::Color(99, 155, 99), sf::Color(0, 255, 100), 2.0f);
+    entity->cShape = std::make_shared<CShape>(m_playerConfig.size, m_playerConfig.radius, sf::Color(99, 155, 99), sf::Color(0, 0, 0), 1.0f);
 
     entity->cInput = std::make_shared<CInput>();
     entity->cScore = std::make_shared<CScore>(0);
@@ -304,6 +304,16 @@ void Game::sGUI() {
         } else {
             m_enemySpawnCooldown -= 100;
         }
+    }
+
+    if (ImGui::ColorPicker4("Pick a player color", m_playerConfig.color)) {
+        sf::Color sfColor(
+            static_cast<sf::Uint8>(m_playerConfig.color[0] * 255),
+            static_cast<sf::Uint8>(m_playerConfig.color[1] * 255),
+            static_cast<sf::Uint8>(m_playerConfig.color[2] * 255),
+            static_cast<sf::Uint8>(m_playerConfig.color[3] * 255)
+        );
+        m_player->cShape->circle.setFillColor(sfColor);
     }
 
     ImGui::End();
