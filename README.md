@@ -2,7 +2,8 @@
 
 C++ game/engine build with SFML
 
-It's just a fun project based on a YouTube course - [COMP4300 - Game Programming](https://www.youtube.com/watch?v=-ugbLQlw_VM&t=13s&ab_channel=DaveChurchill) 
+It's just a fun project, using ECS system and SMFL c++ library
+
 
 ![Screenshot 2024-10-02 200918](https://github.com/user-attachments/assets/66b85152-7e8a-4d9b-8389-ccbb94e41e16)
 
