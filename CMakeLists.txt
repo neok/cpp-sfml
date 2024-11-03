@@ -14,20 +14,28 @@ set(IMGUI_DIR "C:/imgui")
 # ImGui-SFML location
 set(IMGUI_SFML_DIR "C:/imgui-sfml")
 
+set(FONTS_SRC_DIR "${CMAKE_SOURCE_DIR}/fonts")
+set(FONTS_DST_DIR "${CMAKE_BINARY_DIR}/fonts")
+
+set(ASSETS_SRC_DIR "${CMAKE_SOURCE_DIR}/images")
+set(ASSETS_DST_DIR "${CMAKE_BINARY_DIR}/images")
+
 # Find SFML package
 set(SFML_STATIC_LIBRARIES TRUE)  # Use static linking
 find_package(SFML 2.6 COMPONENTS graphics window system REQUIRED)
+add_custom_target(CopyAssets ALL
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${ASSETS_SRC_DIR} ${ASSETS_DST_DIR}
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${FONTS_SRC_DIR} ${FONTS_DST_DIR}
+)
+
 
 # Add the executable
 add_executable(${PROJECT_NAME}
         WIN32
         src/main.cpp
-        src/Utils.cpp
-        src/EntityManager.cpp
-        src/Game.cpp
-        src/Vec2.cpp
-        src/Components.h
-        src/Entity.cpp
+        src/Action.cpp src/Animation.cpp src/Assets.cpp
+        src/Entity.cpp src/EntityManager.cpp src/GameEngine.cpp
+        src/Physics.cpp src/Scene.cpp src/Scene_Menu.cpp src/Scene_Play.cpp src/vec2.cpp
         ${IMGUI_DIR}/imgui.cpp
         ${IMGUI_DIR}/imgui_draw.cpp
         ${IMGUI_DIR}/imgui_demo.cpp
@@ -36,7 +44,7 @@ add_executable(${PROJECT_NAME}
         ${IMGUI_DIR}/backends
         ${IMGUI_SFML_DIR}/imgui-SFML.cpp
 )
-
+add_dependencies(${PROJECT_NAME} CopyAssets)
 # Include directories for ImGui and SFML
 #target_include_directories(${PROJECT_NAME}
 #        PRIVATE
