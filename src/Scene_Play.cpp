@@ -5,6 +5,8 @@
 #include "Scene_Play.h"
 #include "Assets.h"
 // #include "Physics.h"
+#include <SFML/OpenGL.hpp>
+
 #include "GameEngine.h"
 #include "Components.h"
 #include "Action.h"
@@ -22,6 +24,8 @@ void Scene_Play::init(const std::string &levelPath) {
     registerAction(sf::Keyboard::T, "TOGGLE_TEXTURE");   // Toggle drawing (T)extures
     registerAction(sf::Keyboard::C, "TOGGLE_COLLISION"); // Toggle drawing (C)ollision Boxes
     registerAction(sf::Keyboard::G, "TOGGLE_GRID");      // Toggle drawing (G)rid
+    registerAction(sf::Keyboard::D, "MOVE_RIGHT");
+    registerAction(sf::Keyboard::A, "MOVE_LEFT");
 
     // TODO: Register all other gameplay Actions
     // registerAction(sf::Keyboard::W, "JUMP");
@@ -53,7 +57,7 @@ void Scene_Play::loadLevel(const std::string &fileName) {
 
     // NOTE: all the code below is sample code which shows you how to
     //       set up and use entities with the new syntax, it should be removed
-
+    m_playerConfig.SPEED = 4;
     spawnPlayer();
 
     // some sample entities
@@ -100,6 +104,7 @@ void Scene_Play::spawnPlayer() {
     m_player->addComponent<CAnimation>(m_game->assets().getAnimation("Stand"), true);
     m_player->addComponent<CTransform>(vec2(224, 352));
     m_player->addComponent<CBoundingBox>(vec2(48, 48));
+    m_player->addComponent<CInput>();
 
     // TODO: be sure to add the remaining components to the player
 }
@@ -126,7 +131,23 @@ void Scene_Play::sMovement() {
     // TODO: Implement gravity's effect on the player
     // TODO: Implement the maximum player speed in both X and Y directions
     // NOTE: Setting an entity's scale.x to -1/1 will make it face to the left/right
-  
+    // auto& input = m_player->getComponent<CInput>();
+    // auto& transform = m_player->getComponent<CTransform>();
+    // std::cout << m_player->getComponent<CInput>().right << std::endl;
+    m_player->getComponent<CTransform>().velocity.x = 0;
+    if (m_player->getComponent<CInput>().right) {
+        m_player->getComponent<CTransform>().velocity.x = m_playerConfig.SPEED;
+        m_player->getComponent<CTransform>().scale.x = 1;
+    }
+
+    if (m_player->getComponent<CInput>().left) {
+        m_player->getComponent<CTransform>().velocity.x = -m_playerConfig.SPEED;
+        m_player->getComponent<CTransform>().scale.x = -1;
+    }
+
+    // for (const auto& entity : m_entityManager.getEntities()) {
+        m_player->getComponent<CTransform>().pos += m_player->getComponent<CTransform>().velocity;
+    // }
 }
 
 void Scene_Play::sLifespan() {
@@ -153,6 +174,7 @@ void Scene_Play::sCollision() {
 }
 
 void Scene_Play::sDoAction(const Action &action) {
+
     if (action.type() == "START") {
         if (action.name() == "TOGGLE_TEXTURE") { m_drawTextures = !m_drawTextures; }
         else if (action.name() == "TOGGLE_COLLISION") { m_drawCollision = !m_drawCollision; }
@@ -162,13 +184,82 @@ void Scene_Play::sDoAction(const Action &action) {
         else if (action.name() == "JUMP") {
             // m_player jump
         }
-    } else if (action.type() == "END") {
+        else if (action.name() == "MOVE_RIGHT") {
+            m_player->getComponent<CInput>().right = true;
+        }   else if (action.name() == "MOVE_LEFT") {
+            m_player->getComponent<CInput>().left = true;
+        }
+    } else if (action.type() == "END")  {
+        if (action.name() == "MOVE_RIGHT") {
+            m_player->getComponent<CInput>().right = false;
+        } else if (action.name() == "MOVE_LEFT") {
+            m_player->getComponent<CInput>().left = false;
+        }
 
     }
 }
 
+void Scene_Play::changePlayerStateTo(const std::string &state) {
+    auto &prev = m_player->getComponent<CState>().previousState;
+    if (prev != state) {
+        prev = m_player->getComponent<CState>().state;
+        m_player->getComponent<CState>().state = state;
+        m_player->getComponent<CState>().changeAnimation = true;
+    } else {
+        m_player->getComponent<CState>().changeAnimation = false;
+    }
+
+}
+
 void Scene_Play::sAnimation() {
     // TODO: Complete the Animation class code first
+    if (m_player->getComponent<CTransform>().velocity.x != 0) {
+        // changePlayerStateTo("run");
+        // m_player->getComponent<CState>().state = "run";
+        changePlayerStateTo("run");
+
+        // m_player->addComponent<CAnimation>(m_game->assets().getAnimation("Run"), true);
+    } else {
+        changePlayerStateTo("stand");
+        // m_player->addComponent<CAnimation>(m_game->assets().getAnimation("Stand"), true);
+    }
+    if (m_player->getComponent<CState>().changeAnimation) {
+        std::string animationName {};
+        if (m_player->getComponent<CState>().state == "run") {
+            animationName = "Run";
+        } else if (m_player->getComponent<CState>().state == "stand") {
+            animationName = "Stand";
+        }
+        m_player->addComponent<CAnimation>(m_game->assets().getAnimation(animationName), true);
+    }
+
+    for (const auto &entity: m_entityManager.getEntities()) {
+        if (entity->getComponent<CAnimation>().animation.hasEnded() && !entity->getComponent<CAnimation>().repeat) {
+            entity->destroy();
+        }
+        if (entity->hasComponent<CAnimation>()) {
+            entity->getComponent<CAnimation>().animation.update();
+        }
+    }
+
+    // if (m_player->getComponent<CState>().changeAnimation) {
+    //     std::string animationName;
+    //     if (m_player->getComponent<CState>().state == "stand") {
+    //         animationName = "Stand";
+    //     } else if (m_player->getComponent<CState>().state == "air") {
+    //         animationName = "Jump";
+    //     } else if (m_player->getComponent<CState>().state == "run") {
+    //         animationName = "Run";
+    //     } else if (m_player->getComponent<CState>().state == "standshoot") {
+    //         animationName = "StandShoot";
+    //     } else if (m_player->getComponent<CState>().state == "airshoot") {
+    //         animationName = "AirShoot";
+    //     } else if (m_player->getComponent<CState>().state == "runshoot") {
+    //         animationName = "RunShoot";
+    //     }
+    //     // std::cout << "Ivan: getAnimation " << animationName << "\n";
+    //     m_player->addComponent<CAnimation>(m_game->assets().getAnimation(animationName), true);
+    // }
 }
 
 void Scene_Play::onEnd() {

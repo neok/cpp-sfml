@@ -83,6 +83,8 @@ public:
 class CState : public Component {
 public:
     std::string state = "jumping";
+    std::string previousState = "jumping";
+    bool changeAnimation = false;
 
     CState() = default;
 

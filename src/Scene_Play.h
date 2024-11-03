@@ -50,7 +50,7 @@ protected:
 
     void onEnd() override;
 
-//    void changePlayerStateTo(PlayerState s);
+    void changePlayerStateTo(const std::string &state);
 //    void spawnCoinSpin(std::shared_ptr<Entity> tile);
 //    void spawnBrickDebris(std::shared_ptr<Entity> tile);
 

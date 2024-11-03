@@ -15,7 +15,7 @@ GameEngine::GameEngine(const std::string &path) {
 void GameEngine::init(const std::string &path) {
     m_assets.loadFromFile(path);
 
-    m_window.create(sf::VideoMode(1280, 768), "Definitely Not Mario");
+    m_window.create(sf::VideoMode(1280, 768), "Game");
     m_window.setFramerateLimit(60);
 
     changeScene("MENU", std::make_shared<Scene_Menu>(this));
@@ -68,9 +68,10 @@ void GameEngine::sUserInput() {
             }
 
             // determine start or end action by whether it was key press or release
-            const std::string actionType = (event.type == sf::Event::KeyPressed) ? "START" : " END";
+            const std::string actionType = (event.type == sf::Event::KeyPressed) ? "START" : "END";
 
             // look up the action and send the action to the scene
+            // std::cout << actionType << std::endl;
             currentScene()->doAction(Action(currentScene()->getActionMap().at(event.key.code), actionType));
         }
     }
