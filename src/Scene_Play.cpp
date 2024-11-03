@@ -5,6 +5,7 @@
 #include "Scene_Play.h"
 #include "Assets.h"
 // #include "Physics.h"
+#include <cmath>
 #include <SFML/OpenGL.hpp>
 
 #include "GameEngine.h"
@@ -26,9 +27,10 @@ void Scene_Play::init(const std::string &levelPath) {
     registerAction(sf::Keyboard::G, "TOGGLE_GRID");      // Toggle drawing (G)rid
     registerAction(sf::Keyboard::D, "MOVE_RIGHT");
     registerAction(sf::Keyboard::A, "MOVE_LEFT");
+    registerAction(sf::Keyboard::W, "JUMP");
+
 
     // TODO: Register all other gameplay Actions
-    // registerAction(sf::Keyboard::W, "JUMP");
 
     m_gridText.setCharacterSize(12);
     m_gridText.setFont(m_game->assets().getFont("Mario"));
@@ -58,6 +60,8 @@ void Scene_Play::loadLevel(const std::string &fileName) {
     // NOTE: all the code below is sample code which shows you how to
     //       set up and use entities with the new syntax, it should be removed
     m_playerConfig.SPEED = 4;
+    m_playerConfig.GRAVITY = 0.4;
+    m_playerConfig.JUMP = 1.8;
     spawnPlayer();
 
     // some sample entities
@@ -105,6 +109,7 @@ void Scene_Play::spawnPlayer() {
     m_player->addComponent<CTransform>(vec2(224, 352));
     m_player->addComponent<CBoundingBox>(vec2(48, 48));
     m_player->addComponent<CInput>();
+    m_player->addComponent<CGravity>(m_playerConfig.GRAVITY);
 
     // TODO: be sure to add the remaining components to the player
 }
@@ -135,6 +140,27 @@ void Scene_Play::sMovement() {
     // auto& transform = m_player->getComponent<CTransform>();
     // std::cout << m_player->getComponent<CInput>().right << std::endl;
     m_player->getComponent<CTransform>().velocity.x = 0;
+
+    if (m_player->getComponent<CInput>().up && m_player->getComponent<CInput>().canJump) {
+        m_player->getComponent<CTransform>().velocity.y -= m_playerConfig.JUMP;
+
+        // m_player->getComponent<CTransform>().velocity.y = -std::sqrt(2.0f * 981.0f * 2);
+    }
+    vec2 &v = m_player->getComponent<CTransform>().velocity;
+    v.y += m_player->getComponent<CGravity>().gravity;
+    std::cout << v.y <<std::endl;
+    if (v.y < -8.0f) {
+        v.y = -8.0f;
+    }
+    if (m_player->getComponent<CTransform>().pos.y > 352) {
+        // v.y = 0;
+        //
+        m_player->getComponent<CTransform>().pos.y = 352;
+        m_player->getComponent<CInput>().canJump = true;
+        // m_player->getComponent<CGravity>().gravity = 0;
+        m_player->getComponent<CTransform>().velocity.y = 0;
+    }
+    // std::cout << m_player->getComponent<CTransform>().pos.y << std::endl;
     if (m_player->getComponent<CInput>().right) {
         m_player->getComponent<CTransform>().velocity.x = m_playerConfig.SPEED;
         m_player->getComponent<CTransform>().scale.x = 1;
@@ -145,8 +171,13 @@ void Scene_Play::sMovement() {
         m_player->getComponent<CTransform>().scale.x = -1;
     }
 
+
+
+    // m_player->getComponent<CTransform>().velocity.y += 981.0f;
     // for (const auto& entity : m_entityManager.getEntities()) {
         m_player->getComponent<CTransform>().pos += m_player->getComponent<CTransform>().velocity;
+
+
     // }
 }
 
@@ -182,7 +213,10 @@ void Scene_Play::sDoAction(const Action &action) {
         else if (action.name() == "PAUSE") { setPaused(!m_paused); }
         else if (action.name() == "QUIT") { onEnd(); }
         else if (action.name() == "JUMP") {
-            // m_player jump
+            if (m_player->getComponent<CInput>().canJump) {
+                m_player->getComponent<CInput>().up = true;
+                m_player->getComponent<CInput>().canJump = false;
+            }
         }
         else if (action.name() == "MOVE_RIGHT") {
             m_player->getComponent<CInput>().right = true;
@@ -194,6 +228,8 @@ void Scene_Play::sDoAction(const Action &action) {
             m_player->getComponent<CInput>().right = false;
         } else if (action.name() == "MOVE_LEFT") {
             m_player->getComponent<CInput>().left = false;
+        } else if (action.name() == "JUMP") {
+            m_player->getComponent<CInput>().up = false;
         }
 
     }
@@ -213,14 +249,19 @@ void Scene_Play::changePlayerStateTo(const std::string &state) {
 
 void Scene_Play::sAnimation() {
     // TODO: Complete the Animation class code first
-    if (m_player->getComponent<CTransform>().velocity.x != 0) {
-        // changePlayerStateTo("run");
+    if (m_player->getComponent<CTransform>().velocity.y < 0) {
+            changePlayerStateTo("jump");
         // m_player->getComponent<CState>().state = "run";
-        changePlayerStateTo("run");
 
         // m_player->addComponent<CAnimation>(m_game->assets().getAnimation("Run"), true);
     } else {
-        changePlayerStateTo("stand");
+        if (m_player->getComponent<CTransform>().velocity.x != 0) {
+            changePlayerStateTo("run");
+        } else {
+            changePlayerStateTo("stand");
+        }
+
+
         // m_player->addComponent<CAnimation>(m_game->assets().getAnimation("Stand"), true);
     }
     if (m_player->getComponent<CState>().changeAnimation) {
@@ -229,6 +270,8 @@ void Scene_Play::sAnimation() {
             animationName = "Run";
         } else if (m_player->getComponent<CState>().state == "stand") {
             animationName = "Stand";
+        } else if (m_player->getComponent<CState>().state == "jump") {
+            animationName = "Jump";
         }
         m_player->addComponent<CAnimation>(m_game->assets().getAnimation(animationName), true);
     }
