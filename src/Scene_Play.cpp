@@ -252,7 +252,8 @@ void Scene_Play::sCollision() {
             if (0 < overlap.y && -m_gridSize.x < overlap.x) {
                 if (0 <= overlap.x && pOverlap.x <= 0) {
                     bullet->destroy();
-                    tile->destroy();
+                    tile->getComponent<CAnimation>().animation = m_game->assets().getAnimation("Explosion");
+                    tile->addComponent<CLifespan>(12, m_currentFrame);
                     break;
                 }
             }

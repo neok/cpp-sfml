@@ -187,7 +187,9 @@ I recommend approaching this assignment in the following order, which will help 
   Remember, a collision occurs when the overlap is non-zero in both the X and Y component.
   Bullets should always be destroyed when they collide with any non-decorative tile.
 
-- Implement collision resolution such that when the player collides with a non-decorative tile, the player cannot enter it over overlap it. When the player collides with a tile from below, its y-velocity should be set to zero so that it falls back downward and doesn't 'hover' below the tile.
+- Implement collision resolution such that when the player collides with a non-decorative tile,
+  the player cannot enter it over overlap it. When the player collides with a tile from below,
+  its y-velocity should be set to zero so that it falls back downward and doesn't 'hover' below the tile.
 
 - Implement a way of detecting which side the player collided with the tile
 
