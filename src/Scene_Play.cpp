@@ -139,6 +139,7 @@ void Scene_Play::spawnBullet(std::shared_ptr<Entity> entity) {
         0
     );
     bullet->addComponent<CBoundingBox>(bullet->getComponent<CAnimation>().animation.getSize());
+    bullet->addComponent<CLifespan>(100, m_currentFrame);
 }
 
 void Scene_Play::update() {
@@ -151,7 +152,7 @@ void Scene_Play::update() {
     sCollision();
     sAnimation();
     sRender();
-    // m_currentFrame++;
+    m_currentFrame++;
 }
 
 void Scene_Play::sMovement() {
@@ -216,7 +217,16 @@ void Scene_Play::sMovement() {
 }
 
 void Scene_Play::sLifespan() {
+    for (const auto& entity : m_entityManager.getEntities()) {
+        if (entity->hasComponent<CLifespan>()) {
+            auto &eLife = entity->getComponent<CLifespan>();
 
+            if (m_currentFrame - eLife.frameCreated >= eLife.lifespan) {
+                entity->destroy();
+            }
+
+        }
+    }
     // TODO: Check lifespan of entities the have them, and destroy them if the go over
 }
 
@@ -284,19 +294,25 @@ void Scene_Play::changePlayerStateTo(const std::string &state) {
 void Scene_Play::sAnimation() {
     // TODO: Complete the Animation class code first
     if (m_player->getComponent<CTransform>().velocity.y < 0) {
-        changePlayerStateTo("jump");
-        // m_player->getComponent<CState>().state = "run";
-
-        // m_player->addComponent<CAnimation>(m_game->assets().getAnimation("Run"), true);
+        if (!m_player->getComponent<CInput>().canShoot) {
+            changePlayerStateTo("jump");
+        } else {
+            changePlayerStateTo("air_shoot");
+        }
     } else {
         if (m_player->getComponent<CTransform>().velocity.x != 0) {
-            changePlayerStateTo("run");
+            if (!m_player->getComponent<CInput>().canShoot) {
+                changePlayerStateTo("run_shoot");
+            } else {
+                changePlayerStateTo("run");
+            }
         } else {
-            changePlayerStateTo("stand");
+            if (!m_player->getComponent<CInput>().canShoot) {
+                changePlayerStateTo("stand_shoot");
+            } else {
+                changePlayerStateTo("stand");
+            }
         }
-
-
-        // m_player->addComponent<CAnimation>(m_game->assets().getAnimation("Stand"), true);
     }
     if (m_player->getComponent<CState>().changeAnimation) {
         std::string animationName{};
@@ -306,6 +322,12 @@ void Scene_Play::sAnimation() {
             animationName = "Stand";
         } else if (m_player->getComponent<CState>().state == "jump") {
             animationName = "Jump";
+        } else if (m_player->getComponent<CState>().state == "air_shoot") {
+            animationName = "AirShoot";
+        }  else if (m_player->getComponent<CState>().state == "run_shoot") {
+            animationName = "RunShoot";
+        }  else if (m_player->getComponent<CState>().state == "stand_shoot") {
+            animationName = "StandShoot";
         }
         m_player->addComponent<CAnimation>(m_game->assets().getAnimation(animationName), true);
     }
@@ -346,6 +368,8 @@ void Scene_Play::onEnd() {
 }
 
 void Scene_Play::sRender() {
+    // std::cout << "Entities size" << m_entityManager.getEntities().size() << std::endl;
+
     // color the background darker, so you know that the game is paused
     if (!m_paused) {
         m_game->window().clear(sf::Color(100, 100, 255));
