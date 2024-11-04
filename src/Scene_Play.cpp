@@ -16,22 +16,20 @@
 
 
 Scene_Play::Scene_Play(GameEngine *gameEngine, const std::string &levelPath)
-        : Scene(gameEngine), m_levelPath(levelPath) {
+    : Scene(gameEngine), m_levelPath(levelPath) {
     init(levelPath);
 }
 
 void Scene_Play::init(const std::string &levelPath) {
     registerAction(sf::Keyboard::P, "PAUSE");
     registerAction(sf::Keyboard::Escape, "QUIT");
-    registerAction(sf::Keyboard::T, "TOGGLE_TEXTURE");   // Toggle drawing (T)extures
+    registerAction(sf::Keyboard::T, "TOGGLE_TEXTURE"); // Toggle drawing (T)extures
     registerAction(sf::Keyboard::C, "TOGGLE_COLLISION"); // Toggle drawing (C)ollision Boxes
-    registerAction(sf::Keyboard::G, "TOGGLE_GRID");      // Toggle drawing (G)rid
+    registerAction(sf::Keyboard::G, "TOGGLE_GRID"); // Toggle drawing (G)rid
     registerAction(sf::Keyboard::D, "MOVE_RIGHT");
     registerAction(sf::Keyboard::A, "MOVE_LEFT");
     registerAction(sf::Keyboard::W, "JUMP");
-
-
-    // TODO: Register all other gameplay Actions
+    registerAction(sf::Keyboard::Space, "SHOOT");
 
     m_gridText.setCharacterSize(12);
     m_gridText.setFont(m_game->assets().getFont("Mario"));
@@ -50,12 +48,12 @@ vec2 Scene_Play::gridToMidPixel(float gridX, float gridY, std::shared_ptr<Entity
 
     return {
         gridX * m_gridSize.x + entitySize.x / 2.0f,
-       static_cast<float>(height()) - gridY * m_gridSize.y - entitySize.y / 2.0f
+        static_cast<float>(height()) - gridY * m_gridSize.y - entitySize.y / 2.0f
     };
 }
 
 void Scene_Play::loadLevel(const std::string &fileName) {
-     m_entityManager = EntityManager();
+    m_entityManager = EntityManager();
 
     // read in the level file and add the appropriate entities
     // use the PlayerConfig struct m_playerConfig to store player properties
@@ -68,7 +66,7 @@ void Scene_Play::loadLevel(const std::string &fileName) {
 
     std::string entityType;
     while (file >> entityType) {
-        std::cout << entityType <<std::endl;
+        std::cout << entityType << std::endl;
 
         if (entityType == "Tile") {
             std::string animationName;
@@ -78,13 +76,12 @@ void Scene_Play::loadLevel(const std::string &fileName) {
             auto tile = m_entityManager.addEntity("tile");
             tile->addComponent<CAnimation>(m_game->assets().getAnimation(animationName), true);
             tile->addComponent<CTransform>(
-                    gridToMidPixel(gridX, gridY, tile),
-                    vec2(0, 0),
-                    vec2(1, 1),
-                    0
+                gridToMidPixel(gridX, gridY, tile),
+                vec2(0, 0),
+                vec2(1, 1),
+                0
             );
             tile->addComponent<CBoundingBox>(m_gridSize);
-
         } else if (entityType == "Dec") {
             std::string animationName;
             float gridX, gridY;
@@ -93,22 +90,20 @@ void Scene_Play::loadLevel(const std::string &fileName) {
             auto dec = m_entityManager.addEntity("dec");
             dec->addComponent<CAnimation>(m_game->assets().getAnimation(animationName), true);
             dec->addComponent<CTransform>(
-                    gridToMidPixel(gridX, gridY, dec),
-                    vec2(0, 0),
-                    vec2(1, 1),
-                    0
+                gridToMidPixel(gridX, gridY, dec),
+                vec2(0, 0),
+                vec2(1, 1),
+                0
             );
-
         } else if (entityType == "Player") {
             file >> m_playerConfig.X >> m_playerConfig.Y
-                 >> m_playerConfig.CX >> m_playerConfig.CY
-                 >> m_playerConfig.SPEED
-                 >> m_playerConfig.JUMP
-                 >> m_playerConfig.MAX_SPEED
-                 >> m_playerConfig.GRAVITY
-                 >> m_playerConfig.WEAPON;
+                    >> m_playerConfig.CX >> m_playerConfig.CY
+                    >> m_playerConfig.SPEED
+                    >> m_playerConfig.JUMP
+                    >> m_playerConfig.MAX_SPEED
+                    >> m_playerConfig.GRAVITY
+                    >> m_playerConfig.WEAPON;
             spawnPlayer();
-
         } else {
             std::cerr << "Unknown entity type " << entityType << "\n";
             // exit(-1);
@@ -120,10 +115,10 @@ void Scene_Play::spawnPlayer() {
     m_player = m_entityManager.addEntity("player");
     m_player->addComponent<CAnimation>(m_game->assets().getAnimation("Stand"), true);
     m_player->addComponent<CTransform>(
-            gridToMidPixel(m_playerConfig.X, m_playerConfig.Y, m_player),
-            vec2(m_playerConfig.SPEED, 0),
-            vec2(1, 1),
-            0
+        gridToMidPixel(m_playerConfig.X, m_playerConfig.Y, m_player),
+        vec2(m_playerConfig.SPEED, 0),
+        vec2(1, 1),
+        0
     );
     m_player->addComponent<CBoundingBox>(vec2(m_playerConfig.CX, m_playerConfig.CY));
     m_player->addComponent<CInput>();
@@ -191,10 +186,9 @@ void Scene_Play::sMovement() {
     }
 
 
-
     // m_player->getComponent<CTransform>().velocity.y += 981.0f;
     // for (const auto& entity : m_entityManager.getEntities()) {
-        m_player->getComponent<CTransform>().pos += m_player->getComponent<CTransform>().velocity;
+    m_player->getComponent<CTransform>().pos += m_player->getComponent<CTransform>().velocity;
 
 
     // }
@@ -224,25 +218,22 @@ void Scene_Play::sCollision() {
 }
 
 void Scene_Play::sDoAction(const Action &action) {
-
     if (action.type() == "START") {
-        if (action.name() == "TOGGLE_TEXTURE") { m_drawTextures = !m_drawTextures; }
-        else if (action.name() == "TOGGLE_COLLISION") { m_drawCollision = !m_drawCollision; }
-        else if (action.name() == "TOGGLE_GRID") { m_drawGrid = !m_drawGrid; }
-        else if (action.name() == "PAUSE") { setPaused(!m_paused); }
-        else if (action.name() == "QUIT") { onEnd(); }
-        else if (action.name() == "JUMP") {
+        if (action.name() == "TOGGLE_TEXTURE") { m_drawTextures = !m_drawTextures; } else if (
+            action.name() == "TOGGLE_COLLISION") { m_drawCollision = !m_drawCollision; } else if (
+            action.name() == "TOGGLE_GRID") { m_drawGrid = !m_drawGrid; } else if (action.name() == "PAUSE") {
+            setPaused(!m_paused);
+        } else if (action.name() == "QUIT") { onEnd(); } else if (action.name() == "JUMP") {
             if (m_player->getComponent<CInput>().canJump) {
                 m_player->getComponent<CInput>().up = true;
                 m_player->getComponent<CInput>().canJump = false;
             }
-        }
-        else if (action.name() == "MOVE_RIGHT") {
+        } else if (action.name() == "MOVE_RIGHT") {
             m_player->getComponent<CInput>().right = true;
-        }   else if (action.name() == "MOVE_LEFT") {
+        } else if (action.name() == "MOVE_LEFT") {
             m_player->getComponent<CInput>().left = true;
         }
-    } else if (action.type() == "END")  {
+    } else if (action.type() == "END") {
         if (action.name() == "MOVE_RIGHT") {
             m_player->getComponent<CInput>().right = false;
         } else if (action.name() == "MOVE_LEFT") {
@@ -250,7 +241,6 @@ void Scene_Play::sDoAction(const Action &action) {
         } else if (action.name() == "JUMP") {
             m_player->getComponent<CInput>().up = false;
         }
-
     }
 }
 
@@ -263,13 +253,12 @@ void Scene_Play::changePlayerStateTo(const std::string &state) {
     } else {
         m_player->getComponent<CState>().changeAnimation = false;
     }
-
 }
 
 void Scene_Play::sAnimation() {
     // TODO: Complete the Animation class code first
     if (m_player->getComponent<CTransform>().velocity.y < 0) {
-            changePlayerStateTo("jump");
+        changePlayerStateTo("jump");
         // m_player->getComponent<CState>().state = "run";
 
         // m_player->addComponent<CAnimation>(m_game->assets().getAnimation("Run"), true);
@@ -284,7 +273,7 @@ void Scene_Play::sAnimation() {
         // m_player->addComponent<CAnimation>(m_game->assets().getAnimation("Stand"), true);
     }
     if (m_player->getComponent<CState>().changeAnimation) {
-        std::string animationName {};
+        std::string animationName{};
         if (m_player->getComponent<CState>().state == "run") {
             animationName = "Run";
         } else if (m_player->getComponent<CState>().state == "stand") {
@@ -353,10 +342,10 @@ void Scene_Play::sRender() {
                 auto &animation = e->getComponent<CAnimation>().animation;
                 animation.getSprite().setRotation(transform.angle);
                 animation.getSprite().setPosition(
-                        transform.pos.x, transform.pos.y
+                    transform.pos.x, transform.pos.y
                 );
                 animation.getSprite().setScale(
-                        transform.scale.x, transform.scale.y
+                    transform.scale.x, transform.scale.y
                 );
                 m_game->window().draw(animation.getSprite());
             }
