@@ -178,9 +178,14 @@ I recommend approaching this assignment in the following order, which will help 
   Bullet should shoot when Space is pressed in same direction player facing. Holding down the space button should not continuously fire bullets. A new bullet can only be fired after the space key has been released. Use the entity's CInput.canShoot variable to implement this
 
 - Implement Physics::GetOverlap()
-  This function should return the overlap dimensions between the bounding boxes of two entities. This is the same as the purple rectangle in notes. GetPreviousOverlap should be a copy/paste of this solution except using the previous positions instead of the current positions of th entity. If either input entity has no bounding box, then return Vec2(0,0).
+  This function should return the overlap dimensions between the bounding boxes of two entities.
+  This is the same as the purple rectangle in notes. GetPreviousOverlap should be a copy/paste
+  of this solution except using the previous positions instead of the current positions of th entity.
+  If either input entity has no bounding box, then return Vec2(0,0).
 
-- Implement collision checking with bullets / brick tiles such that the brick is destroyed when a bullet collides with it. Remember, a collision occurs when the overlap is non-zero in both the X and Y component. Bullets should always be destroyed when they collide with any non-decorative tile.
+- Implement collision checking with bullets / brick tiles such that the brick is destroyed when a bullet collides with it.
+  Remember, a collision occurs when the overlap is non-zero in both the X and Y component.
+  Bullets should always be destroyed when they collide with any non-decorative tile.
 
 - Implement collision resolution such that when the player collides with a non-decorative tile, the player cannot enter it over overlap it. When the player collides with a tile from below, its y-velocity should be set to zero so that it falls back downward and doesn't 'hover' below the tile.
 
