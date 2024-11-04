@@ -117,15 +117,18 @@ void Scene_Play::loadLevel(const std::string &fileName) {
 }
 
 void Scene_Play::spawnPlayer() {
-    // here is a sample player entity which you can use to construct other entities
     m_player = m_entityManager.addEntity("player");
     m_player->addComponent<CAnimation>(m_game->assets().getAnimation("Stand"), true);
-    m_player->addComponent<CTransform>(vec2(224, 352));
-    m_player->addComponent<CBoundingBox>(vec2(48, 48));
+    m_player->addComponent<CTransform>(
+            gridToMidPixel(m_playerConfig.X, m_playerConfig.Y, m_player),
+            vec2(m_playerConfig.SPEED, 0),
+            vec2(1, 1),
+            0
+    );
+    m_player->addComponent<CBoundingBox>(vec2(m_playerConfig.CX, m_playerConfig.CY));
     m_player->addComponent<CInput>();
+    m_player->addComponent<CState>("stand");
     m_player->addComponent<CGravity>(m_playerConfig.GRAVITY);
-
-    // TODO: be sure to add the remaining components to the player
 }
 
 void Scene_Play::spawnBullet(std::shared_ptr<Entity> entity) {
