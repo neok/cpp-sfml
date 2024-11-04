@@ -13,6 +13,7 @@
 #include "Components.h"
 #include "Action.h"
 #include "SFML/Graphics/RectangleShape.hpp"
+#include "Physics.h"
 
 
 Scene_Play::Scene_Play(GameEngine *gameEngine, const std::string &levelPath)
@@ -208,8 +209,10 @@ void Scene_Play::sMovement() {
 
     // m_player->getComponent<CTransform>().velocity.y += 981.0f;
     // for (const auto& entity : m_entityManager.getEntities()) {
-    m_player->getComponent<CTransform>().pos += m_player->getComponent<CTransform>().velocity;
-    for (auto& entity : m_entityManager.getEntities("bullet")) {
+    // m_player->getComponent<CTransform>().pos += m_player->getComponent<CTransform>().velocity;
+    for (auto& entity : m_entityManager.getEntities()) {
+        entity->getComponent<CTransform>().prevPos = entity->getComponent<CTransform>().pos;
+
         entity->getComponent<CTransform>().pos += entity->getComponent<CTransform>().velocity;
     }
 
@@ -241,6 +244,21 @@ void Scene_Play::sCollision() {
 
     // TODO: Implement bullet/tile collisions
     //       Destroy the tile if it has a Brick animation
+    for (const auto &bullet: m_entityManager.getEntities("bullet")) {
+        for (const auto &tile: m_entityManager.getEntities("tile")) {
+            vec2 overlap = Physics::GetOverlap(bullet, tile);
+            vec2 pOverlap = Physics::GetPreviousOverlap(bullet, tile);
+
+            if (0 < overlap.y && -m_gridSize.x < overlap.x) {
+                if (0 <= overlap.x && pOverlap.x <= 0) {
+                    bullet->destroy();
+                    tile->destroy();
+                    break;
+                }
+            }
+        }
+    }
+
     // TODO: Implement player/tile collisions and resolutions
     //       Update the CState component of the player to store whether
     //       it is currently on the ground or in the air. This will be
