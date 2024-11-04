@@ -128,6 +128,17 @@ void Scene_Play::spawnPlayer() {
 
 void Scene_Play::spawnBullet(std::shared_ptr<Entity> entity) {
     // TODO: this should spawn a bullet at the given entity, going in the direction the entity is facing
+
+    auto bullet = m_entityManager.addEntity("bullet");
+    bullet->addComponent<CAnimation>(m_game->assets().getAnimation(m_playerConfig.WEAPON), true);
+    auto direction = entity->getComponent<CTransform>().scale.x < 0 ? -1 : 1;
+    bullet->addComponent<CTransform>(
+        entity->getComponent<CTransform>().pos,
+        vec2(direction * 2 * m_playerConfig.SPEED, 0),
+        entity->getComponent<CTransform>().scale,
+        0
+    );
+    bullet->addComponent<CBoundingBox>(bullet->getComponent<CAnimation>().animation.getSize());
 }
 
 void Scene_Play::update() {
@@ -175,6 +186,7 @@ void Scene_Play::sMovement() {
     //     m_player->getComponent<CTransform>().velocity.y = 0;
     // }
     // std::cout << m_player->getComponent<CTransform>().pos.y << std::endl;
+
     if (m_player->getComponent<CInput>().right) {
         m_player->getComponent<CTransform>().velocity.x = m_playerConfig.SPEED;
         m_player->getComponent<CTransform>().scale.x = 1;
@@ -184,17 +196,27 @@ void Scene_Play::sMovement() {
         m_player->getComponent<CTransform>().velocity.x = -m_playerConfig.SPEED;
         m_player->getComponent<CTransform>().scale.x = -1;
     }
-
+    if (m_player->getComponent<CInput>().shoot) {
+        if (m_player->getComponent<CInput>().canShoot) {
+            spawnBullet(m_player);
+            m_player->getComponent<CInput>().canShoot = false;
+        }
+    } else {
+        m_player->getComponent<CInput>().canShoot = true;
+    }
 
     // m_player->getComponent<CTransform>().velocity.y += 981.0f;
     // for (const auto& entity : m_entityManager.getEntities()) {
     m_player->getComponent<CTransform>().pos += m_player->getComponent<CTransform>().velocity;
-
+    for (auto& entity : m_entityManager.getEntities("bullet")) {
+        entity->getComponent<CTransform>().pos += entity->getComponent<CTransform>().velocity;
+    }
 
     // }
 }
 
 void Scene_Play::sLifespan() {
+
     // TODO: Check lifespan of entities the have them, and destroy them if the go over
 }
 
@@ -232,6 +254,8 @@ void Scene_Play::sDoAction(const Action &action) {
             m_player->getComponent<CInput>().right = true;
         } else if (action.name() == "MOVE_LEFT") {
             m_player->getComponent<CInput>().left = true;
+        } else if (action.name() == "SHOOT") {
+            m_player->getComponent<CInput>().shoot = true;
         }
     } else if (action.type() == "END") {
         if (action.name() == "MOVE_RIGHT") {
@@ -240,6 +264,8 @@ void Scene_Play::sDoAction(const Action &action) {
             m_player->getComponent<CInput>().left = false;
         } else if (action.name() == "JUMP") {
             m_player->getComponent<CInput>().up = false;
+        } else if (action.name() == "SHOOT") {
+            m_player->getComponent<CInput>().shoot = false;
         }
     }
 }
