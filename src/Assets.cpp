@@ -67,11 +67,11 @@ const sf::Texture &Assets::getTexture(const std::string &name) const {
 }
 
 const Animation &Assets::getAnimation(const std::string &name) const {
-    assert(m_animationMap.find(animation_types) != m_animationMap.end());
+    assert(m_animationMap.find(name) != m_animationMap.end());
     return m_animationMap.at(name);
 }
 
 const sf::Font &Assets::getFont(const std::string &name) const {
-    assert(m_fontMap.find(fontName) != m_fontMap.end());
+    assert(m_fontMap.find(name) != m_fontMap.end());
     return m_fontMap.at(name);
 }
