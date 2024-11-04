@@ -7,7 +7,8 @@
 // #include "Physics.h"
 #include <cmath>
 #include <SFML/OpenGL.hpp>
-
+#include <iostream>
+#include <fstream>
 #include "GameEngine.h"
 #include "Components.h"
 #include "Action.h"
@@ -45,61 +46,74 @@ vec2 Scene_Play::gridToMidPixel(float gridX, float gridY, std::shared_ptr<Entity
     //       You must use the Entity's Animation size to position it correctly
     //       The size of the grid width and height is stored in m_gridSize.x and m_gridSize.y
     //       The bottom-left corner of the Animation should aligh with the bottom left of the grid cell
+    auto entitySize = entity->getComponent<CAnimation>().animation.getSize();
 
-    return vec2(0, 0);
+    return {
+        gridX * m_gridSize.x + entitySize.x / 2.0f,
+       static_cast<float>(height()) - gridY * m_gridSize.y - entitySize.y / 2.0f
+    };
 }
 
 void Scene_Play::loadLevel(const std::string &fileName) {
-    // reset the entity manager every time we load a level
-    m_entityManager = EntityManager();
+     m_entityManager = EntityManager();
 
-    // TODO: read in the level file and add the appropriate entities
-    //       use the PlayerConfig struct m_playerConfig to store player properties
-    //       this struct is defined at the top of Scene_Play.h
-
-    // NOTE: all the code below is sample code which shows you how to
-    //       set up and use entities with the new syntax, it should be removed
-    m_playerConfig.SPEED = 4;
-    m_playerConfig.GRAVITY = 0.4;
-    m_playerConfig.JUMP = 1.8;
-    spawnPlayer();
-
-    // some sample entities
-    auto brick = m_entityManager.addEntity("tile");
-    // IMPORTANT: always add the CAnimation component first so that gridToMidPixel can compute correctly
-    brick->addComponent<CAnimation>(m_game->assets().getAnimation("Brick"), true);
-    brick->addComponent<CTransform>(vec2(96, 480));
-    // NOTE: Your final code should position the entity with the grid x,y position read from the file:
-    // brick->addComponent<CTransform>(gridToMidPixel(gridX, gridY, brick));
-
-    if (brick->getComponent<CAnimation>().animation.getName() == "Brick") {
-        std::cout << "This could be a good way of identifying if a tile is a brick!\n";
+    // read in the level file and add the appropriate entities
+    // use the PlayerConfig struct m_playerConfig to store player properties
+    // this struct is defined at the top of Scene_Play.h
+    std::ifstream file(fileName);
+    if (!file) {
+        std::cerr << "Scene_Play::loadLevel could not load " << fileName << " file.\n";
+        exit(-1);
     }
 
-    auto block = m_entityManager.addEntity("tile");
-    // block->addComponent<CAnimation>(m_game->assets().getAnimation("Block"), true);
-     block->addComponent<CAnimation>(m_game->assets().getAnimation("Ground"), true);
-    block->addComponent<CTransform>(vec2(224, 480));
-    // add a bounding box, this will now show up if we press the 'C' key
-    // block->addComponent<CBoundingBox>(m_game->assets().getAnimation("Block").getSize());
-     block->addComponent<CBoundingBox>(m_game->assets().getAnimation("Ground").getSize());
+    std::string entityType;
+    while (file >> entityType) {
+        std::cout << entityType <<std::endl;
 
-    auto question = m_entityManager.addEntity("tile");
-    question->addComponent<CAnimation>(m_game->assets().getAnimation("Ground"), true);
-    question->addComponent<CTransform>(vec2(352, 480));
+        if (entityType == "Tile") {
+            std::string animationName;
+            float gridX, gridY;
+            file >> animationName >> gridX >> gridY;
 
-    // NOTE: THIS IS INCREDIBLY IMPORTANT PLEASE READ THIS EXAMPLE
-    //       Components are now returned as references rather than pointers
-    //       If you do not specify a reference variable type, it will COPY the component
-    //       Here is an example:
-    //
-    //       This will COPY the transform into the variable 'transform1' - it is INCORRECT
-    //       Any changes you make to transform1 will not be changed inside the entity
-    //       auto transform1 = entity->get<CTransform>()
-    //
-    //       This will REFERENCE the transform with the variable 'transform2' - it is CORRECT
-    //       Now any changes you make to transform2 will be changed inside the entity
-    //       auto& transform2 = entity->get<CTransform>()
+            auto tile = m_entityManager.addEntity("tile");
+            tile->addComponent<CAnimation>(m_game->assets().getAnimation(animationName), true);
+            tile->addComponent<CTransform>(
+                    gridToMidPixel(gridX, gridY, tile),
+                    vec2(0, 0),
+                    vec2(1, 1),
+                    0
+            );
+            tile->addComponent<CBoundingBox>(m_gridSize);
+
+        } else if (entityType == "Dec") {
+            std::string animationName;
+            float gridX, gridY;
+            file >> animationName >> gridX >> gridY;
+
+            auto dec = m_entityManager.addEntity("dec");
+            dec->addComponent<CAnimation>(m_game->assets().getAnimation(animationName), true);
+            dec->addComponent<CTransform>(
+                    gridToMidPixel(gridX, gridY, dec),
+                    vec2(0, 0),
+                    vec2(1, 1),
+                    0
+            );
+
+        } else if (entityType == "Player") {
+            file >> m_playerConfig.X >> m_playerConfig.Y
+                 >> m_playerConfig.CX >> m_playerConfig.CY
+                 >> m_playerConfig.SPEED
+                 >> m_playerConfig.JUMP
+                 >> m_playerConfig.MAX_SPEED
+                 >> m_playerConfig.GRAVITY
+                 >> m_playerConfig.WEAPON;
+            spawnPlayer();
+
+        } else {
+            std::cerr << "Unknown entity type " << entityType << "\n";
+            // exit(-1);
+        }
+    }
 }
 
 void Scene_Play::spawnPlayer() {
@@ -141,25 +155,27 @@ void Scene_Play::sMovement() {
     // std::cout << m_player->getComponent<CInput>().right << std::endl;
     m_player->getComponent<CTransform>().velocity.x = 0;
 
-    if (m_player->getComponent<CInput>().up && m_player->getComponent<CInput>().canJump) {
-        m_player->getComponent<CTransform>().velocity.y -= m_playerConfig.JUMP;
-
-        // m_player->getComponent<CTransform>().velocity.y = -std::sqrt(2.0f * 981.0f * 2);
-    }
-    vec2 &v = m_player->getComponent<CTransform>().velocity;
-    v.y += m_player->getComponent<CGravity>().gravity;
-    std::cout << v.y <<std::endl;
-    if (v.y < -8.0f) {
-        v.y = -8.0f;
-    }
-    if (m_player->getComponent<CTransform>().pos.y > 352) {
-        // v.y = 0;
-        //
-        m_player->getComponent<CTransform>().pos.y = 352;
-        m_player->getComponent<CInput>().canJump = true;
-        // m_player->getComponent<CGravity>().gravity = 0;
-        m_player->getComponent<CTransform>().velocity.y = 0;
-    }
+    //TODO implement at the end when we have collision detection
+    // if (m_player->getComponent<CInput>().up && m_player->getComponent<CInput>().canJump) {
+    //     std::cout << m_player->getComponent<CTransform>().velocity.x << std::endl;
+    //     m_player->getComponent<CTransform>().velocity.y -= m_playerConfig.JUMP;
+    //
+    //     // m_player->getComponent<CTransform>().velocity.y = -std::sqrt(2.0f * 981.0f * 2);
+    // }
+    // vec2 &v = m_player->getComponent<CTransform>().velocity;
+    // v.y += m_player->getComponent<CGravity>().gravity;
+    // if (v.y < -8.0f) {
+    //     v.y = -8.0f;
+    // }
+    // if (m_player->getComponent<CTransform>().pos.y >= 353) {
+    //     std::cout << m_player->getComponent<CTransform>().pos.y << std::endl;
+    //     // v.y = 0;
+    //     //
+    //     m_player->getComponent<CTransform>().pos.y = 353;
+    //     m_player->getComponent<CInput>().canJump = true;
+    //     // m_player->getComponent<CGravity>().gravity = 0;
+    //     m_player->getComponent<CTransform>().velocity.y = 0;
+    // }
     // std::cout << m_player->getComponent<CTransform>().pos.y << std::endl;
     if (m_player->getComponent<CInput>().right) {
         m_player->getComponent<CTransform>().velocity.x = m_playerConfig.SPEED;
