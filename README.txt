@@ -194,7 +194,10 @@ I recommend approaching this assignment in the following order, which will help 
 - Implement a way of detecting which side the player collided with the tile
 
 - Change the controls such that they are the proper left/right/jump style.
-  Note: All movement logic should be in the movement system. The sDoAction system is ONLY used to set the proper CInput variables. If you modify the player's speed or position anywhere inside the sDoAction system, you will lose marks as this is potentially unsafe / produces unwanted effects.
+  Note: All movement logic should be in the movement system.
+  The sDoAction system is ONLY used to set the proper CInput variables.
+   If you modify the player's speed or position anywhere inside the sDoAction system,
+    you will lose marks as this is potentially unsafe / produces unwanted effects.
 
 - Implement gravity such that the player falls toward the bottom of the screen and lands on tiles when it collides with a tile from above. Note that when the player lands on a tile from above, you should set its vertical speed to zero so that gravity does not continue to accelerate the player downward.
 

@@ -112,6 +112,19 @@ void Scene_Play::loadLevel(const std::string &fileName) {
     }
 }
 
+void Scene_Play::spawnCoinSpin(std::shared_ptr<Entity> tile) {
+    const auto coin = m_entityManager.addEntity("coinSpin");
+    const auto& tilePos = tile->getComponent<CTransform>().pos;
+    coin->addComponent<CTransform>(
+        vec2(tilePos.x, tilePos.y - m_gridSize.y ),
+        vec2(0, -0.4f),
+        tile->getComponent<CTransform>().scale,
+        0
+    );
+    coin->addComponent<CAnimation>(m_game->assets().getAnimation("CoinSpin"), true);
+    coin->addComponent<CLifespan>(140, m_currentFrame);
+}
+
 void Scene_Play::spawnPlayer() {
     m_player = m_entityManager.addEntity("player");
     m_player->addComponent<CAnimation>(m_game->assets().getAnimation("Stand"), true);
@@ -269,9 +282,15 @@ void Scene_Play::sCollision() {
             if (overlap.y >= 0 && pOverlap.y <= 0) {
                 m_player->getComponent<CTransform>().pos.y += overlap.y;
                 m_player->getComponent<CTransform>().velocity.y = 0;
+                if (tile->getComponent<CAnimation>().animation.getName() == "Question") {
+                    spawnCoinSpin(tile);
+                    tile->getComponent<CAnimation>().animation = m_game->assets().getAnimation("QuestionHit");
+
+                    continue;
+                }
             }
         }
-     
+
         float dx = tile->getComponent<CTransform>().pos.x - m_player->getComponent<CTransform>().pos.x;
         if (0 < overlap.y && -m_gridSize.x < overlap.x) {
             if (0 <= overlap.x && pOverlap.x <= 0) {
