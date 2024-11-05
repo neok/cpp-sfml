@@ -6,7 +6,6 @@
 #include "Physics.h"
 #include "Assets.h"
 #include "GameEngine.h"
-#include "Components.h"
 #include "Action.h"
 
 
@@ -28,8 +27,8 @@ void Scene_Menu::init() {
     m_menuText.setCharacterSize(titleSize);
     m_menuText.setFillColor(sf::Color::Black);
     m_menuText.setPosition(
-            float(m_game->window().getSize().x) / 2.0f - float(titleSize * (m_title.length() + 1)) / 2.0f,
-            float(titleSize * 3)
+        float(m_game->window().getSize().x) / 2.0f - float(titleSize * (m_title.length() + 1)) / 2.0f,
+        float(titleSize * 3)
     );
 
     m_menuStrings.emplace_back("LEVEL 1");
@@ -42,8 +41,8 @@ void Scene_Menu::init() {
             text.setFillColor(sf::Color::Black);
         }
         text.setPosition(
-                float(m_game->window().getSize().x) / 2.0f - float(26 * (m_menuStrings[i].length() + 1)) / 2.0f,
-                m_menuText.getGlobalBounds().top + 10.0f + 30.0f * float(i + 1)
+            float(m_game->window().getSize().x) / 2.0f - float(26 * (m_menuStrings[i].length() + 1)) / 2.0f,
+            m_menuText.getGlobalBounds().top + 10.0f + 30.0f * float(i + 1)
         );
         m_menuItems.push_back(text);
     }
@@ -83,7 +82,11 @@ void Scene_Menu::sDoAction(const Action &action) {
 void Scene_Menu::sRender() {
     // set menu background
     m_game->window().clear(sf::Color(100, 100, 255));
-
+    auto &centerPos = m_game->window().getView().getCenter();
+    m_menuText.setPosition(
+        centerPos.x - m_menuText.getGlobalBounds().width / 2.0f,
+        m_menuText.getPosition().y
+    );
     // draw title
     m_game->window().draw(m_menuText);
 
@@ -96,8 +99,8 @@ void Scene_Menu::sRender() {
         }
 
         m_menuItems[i].setPosition(
-                float(m_game->window().getSize().x) / 2.0f - float(26 * (m_menuStrings[i].length() + 1)) / 2.0f,
-                m_menuText.getGlobalBounds().top + 10.0f + 30.0f * float(i + 1)
+            centerPos.x - float(26 * (m_menuStrings[i].length() + 1)) / 2.0f, // Center horizontally
+            centerPos.y - 100.0f + 30.0f * float(i)
         );
         m_game->window().draw(m_menuItems[i]);
     }
@@ -106,8 +109,8 @@ void Scene_Menu::sRender() {
     sf::Text help("W:UP  S:DOWN  D:PLAY  ESC:BACK/QUIT", m_game->assets().getFont("Mario"), 26);
     help.setFillColor(sf::Color::Black);
     help.setPosition(
-            float(m_game->window().getSize().x) / 2.0f - float(26 * (help.getString().getSize() + 1)) / 2.0f,
-            float(m_game->window().getSize().y) - 30.0f * 2.0f
+        centerPos.x - float(26 * (help.getString().getSize() + 1)) / 2.0f, // Center horizontally
+        m_game->window().getSize().y - 40.f
     );
     m_game->window().draw(help);
 }

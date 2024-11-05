@@ -14,6 +14,7 @@
 #include "Action.h"
 #include "SFML/Graphics/RectangleShape.hpp"
 #include "Physics.h"
+#include "Scene_Menu.h"
 
 
 Scene_Play::Scene_Play(GameEngine *gameEngine, const std::string &levelPath)
@@ -40,11 +41,6 @@ void Scene_Play::init(const std::string &levelPath) {
 }
 
 vec2 Scene_Play::gridToMidPixel(float gridX, float gridY, std::shared_ptr<Entity> entity) {
-    // TODO: This function takes in a grid (x,y) position and an Entity
-    //       Return a vec2 indicating where the CENTER position of the Entity should be
-    //       You must use the Entity's Animation size to position it correctly
-    //       The size of the grid width and height is stored in m_gridSize.x and m_gridSize.y
-    //       The bottom-left corner of the Animation should aligh with the bottom left of the grid cell
     auto entitySize = entity->getComponent<CAnimation>().animation.getSize();
 
     return {
@@ -112,11 +108,16 @@ void Scene_Play::loadLevel(const std::string &fileName) {
     }
 }
 
+void Scene_Play::spawnBrickDebris(std::shared_ptr<Entity> tile) {
+    tile->getComponent<CAnimation>().animation = m_game->assets().getAnimation("Explosion");
+    tile->addComponent<CLifespan>(10, m_currentFrame);
+}
+
 void Scene_Play::spawnCoinSpin(std::shared_ptr<Entity> tile) {
     const auto coin = m_entityManager.addEntity("coinSpin");
-    const auto& tilePos = tile->getComponent<CTransform>().pos;
+    const auto &tilePos = tile->getComponent<CTransform>().pos;
     coin->addComponent<CTransform>(
-        vec2(tilePos.x, tilePos.y - m_gridSize.y ),
+        vec2(tilePos.x, tilePos.y - m_gridSize.y),
         vec2(0, -0.4f),
         tile->getComponent<CTransform>().scale,
         0
@@ -141,8 +142,6 @@ void Scene_Play::spawnPlayer() {
 }
 
 void Scene_Play::spawnBullet(std::shared_ptr<Entity> entity) {
-    // TODO: this should spawn a bullet at the given entity, going in the direction the entity is facing
-
     auto bullet = m_entityManager.addEntity("bullet");
     bullet->addComponent<CAnimation>(m_game->assets().getAnimation(m_playerConfig.WEAPON), true);
     auto direction = entity->getComponent<CTransform>().scale.x < 0 ? -1 : 1;
@@ -164,17 +163,6 @@ void Scene_Play::update() {
         sLifespan();
         sCollision();
         sAnimation();
-    } else {
-        //debug
-        // for (const auto &tile: m_entityManager.getEntities("tile")) {
-        //     auto& tilePos = tile->getComponent<CTransform>().pos;
-        //     auto playerPos = m_player->getComponent<CTransform>().pos;
-        //     const vec2 overlap = Physics::GetOverlap(m_player, tile);
-        //     const vec2 pOverlap = Physics::GetPreviousOverlap(m_player, tile);
-        //     if (overlap.y < 0 && overlap.x > 0) {
-        //         std::cout << overlap.x << " " << overlap.y << std::endl;
-        //     }
-        // }
     }
 
     sRender();
@@ -207,7 +195,7 @@ void Scene_Play::sMovement() {
         m_player->getComponent<CInput>().canShoot = true;
     }
 
-    for (auto& entity : m_entityManager.getEntities()) {
+    for (auto &entity: m_entityManager.getEntities()) {
         if (entity->hasComponent<CGravity>()) {
             vec2 &v = entity->getComponent<CTransform>().velocity;
             v.y += entity->getComponent<CGravity>().gravity;
@@ -221,7 +209,7 @@ void Scene_Play::sMovement() {
 }
 
 void Scene_Play::sLifespan() {
-    for (const auto& entity : m_entityManager.getEntities()) {
+    for (const auto &entity: m_entityManager.getEntities()) {
         if (entity->hasComponent<CLifespan>()) {
             auto &eLife = entity->getComponent<CLifespan>();
 
@@ -233,12 +221,6 @@ void Scene_Play::sLifespan() {
 }
 
 void Scene_Play::sCollision() {
-    // REMEMBER: SFML's (0,0) position is in the TOP-LEFT corner
-    //           This means jumping will have a negative y-component
-    //           and gravity will have a positive y-component
-    //           Also, something BELOW something else will hava a y value GREATER than it
-    //           Also, something ABOVE something else will hava a y value LESS than it
-
     for (const auto &bullet: m_entityManager.getEntities("bullet")) {
         for (const auto &tile: m_entityManager.getEntities("tile")) {
             vec2 overlap = Physics::GetOverlap(bullet, tile);
@@ -248,26 +230,19 @@ void Scene_Play::sCollision() {
                 if (0 <= overlap.x && pOverlap.x <= 0) {
                     bullet->destroy();
                     tile->getComponent<CAnimation>().animation = m_game->assets().getAnimation("Explosion");
-                    tile->addComponent<CLifespan>(12, m_currentFrame);
+                    spawnBrickDebris(tile);
                     break;
                 }
             }
         }
     }
-     // auto& playerTransform = m_player->getComponent<CTransform>();
-    // TODO: Implement player/tile collisions and resolutions
-    //       Update the CState component of the player to store whether
-    //       it is currently on the ground or in the air. This will be
-    //       used by the Animation system
+
     m_player->getComponent<CGravity>().gravity = m_playerConfig.GRAVITY;
     for (const auto &tile: m_entityManager.getEntities("tile")) {
         const vec2 overlap = Physics::GetOverlap(m_player, tile);
         const vec2 pOverlap = Physics::GetPreviousOverlap(m_player, tile);
         float dy = tile->getComponent<CTransform>().pos.y - m_player->getComponent<CTransform>().pos.y;
 
-
-        //check if play in the air
-        // check if tiles below
         if (0 < overlap.x && -m_gridSize.y < overlap.y && dy > 0) {
             if (0 < overlap.y && pOverlap.y <= 0) {
                 m_player->getComponent<CInput>().canJump = true;
@@ -287,6 +262,8 @@ void Scene_Play::sCollision() {
                     tile->getComponent<CAnimation>().animation = m_game->assets().getAnimation("QuestionHit");
 
                     continue;
+                } else if (tile->getComponent<CAnimation>().animation.getName() == "Brick") {
+                    spawnBrickDebris(tile);
                 }
             }
         }
@@ -321,8 +298,7 @@ void Scene_Play::sDoAction(const Action &action) {
             action.name() == "TOGGLE_COLLISION") { m_drawCollision = !m_drawCollision; } else if (
             action.name() == "TOGGLE_GRID") { m_drawGrid = !m_drawGrid; } else if (action.name() == "PAUSE") {
             setPaused(!m_paused);
-        } else if (action.name() == "QUIT") { onEnd(); }
-        else if (action.name() == "JUMP") {
+        } else if (action.name() == "QUIT") { onEnd(); } else if (action.name() == "JUMP") {
             if (m_player->getComponent<CInput>().canJump) {
                 m_player->getComponent<CInput>().up = true;
             }
@@ -358,7 +334,6 @@ void Scene_Play::changePlayerStateTo(const std::string &state) {
 }
 
 void Scene_Play::sAnimation() {
-    // TODO: Complete the Animation class code first
     if (m_player->getComponent<CTransform>().velocity.y < 0) {
         if (!m_player->getComponent<CInput>().canShoot) {
             changePlayerStateTo("jump");
@@ -390,9 +365,9 @@ void Scene_Play::sAnimation() {
             animationName = "Jump";
         } else if (m_player->getComponent<CState>().state == "air_shoot") {
             animationName = "AirShoot";
-        }  else if (m_player->getComponent<CState>().state == "run_shoot") {
+        } else if (m_player->getComponent<CState>().state == "run_shoot") {
             animationName = "RunShoot";
-        }  else if (m_player->getComponent<CState>().state == "stand_shoot") {
+        } else if (m_player->getComponent<CState>().state == "stand_shoot") {
             animationName = "StandShoot";
         }
         m_player->addComponent<CAnimation>(m_game->assets().getAnimation(animationName), true);
@@ -406,31 +381,10 @@ void Scene_Play::sAnimation() {
             entity->getComponent<CAnimation>().animation.update();
         }
     }
-
-    // if (m_player->getComponent<CState>().changeAnimation) {
-    //     std::string animationName;
-    //     if (m_player->getComponent<CState>().state == "stand") {
-    //         animationName = "Stand";
-    //     } else if (m_player->getComponent<CState>().state == "air") {
-    //         animationName = "Jump";
-    //     } else if (m_player->getComponent<CState>().state == "run") {
-    //         animationName = "Run";
-    //     } else if (m_player->getComponent<CState>().state == "standshoot") {
-    //         animationName = "StandShoot";
-    //     } else if (m_player->getComponent<CState>().state == "airshoot") {
-    //         animationName = "AirShoot";
-    //     } else if (m_player->getComponent<CState>().state == "runshoot") {
-    //         animationName = "RunShoot";
-    //     }
-    //     // std::cout << "Ivan: getAnimation " << animationName << "\n";
-    //     m_player->addComponent<CAnimation>(m_game->assets().getAnimation(animationName), true);
-    // }
 }
 
 void Scene_Play::onEnd() {
-    // TODO: when the scene ends, change back to the MENU scene
-    // use m_game->changeScene(correct params);
-    // m_game->changeScene( "MENU", std::make_shared<Scene_Menu>(m_game));
+    m_game->changeScene("MENU", std::make_shared<Scene_Menu>(m_game));
 }
 
 void Scene_Play::sRender() {

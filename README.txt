@@ -80,7 +80,8 @@ Drawing:
 - Entity rendering has been implemented for you, no need to change that system
 
 Bonus:
-- Any special effects which do not alter game play can be added for up to 5% bonus marks on the assignment. Note that assignments cannot go above 100% total marks, but the 5% bonus can overwrite any marks lost in other areas of the assignment.
+- Any special effects which do not alter game play can be added for up to 5% bonus marks on the assignment.
+Note that assignments cannot go above 100% total marks, but the 5% bonus can overwrite any marks lost in other areas of the assignment.
 - You may develop a 'special weapon' that has special effects which can also contribute to the 5% bonus marks available on the assignment.
 - I will show off some of the more impressive bonus submissions in class
 
