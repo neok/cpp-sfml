@@ -34,7 +34,8 @@ protected:
 
     void spawnPlayer();
 
-    void spawnBullet(std::shared_ptr<Entity> entity);
+    void spawnBullet(const std::shared_ptr<Entity>& entity);
+    void spawnBoomerang(const std::shared_ptr<Entity>& entity);
 
     void sMovement();
 

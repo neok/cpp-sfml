@@ -141,13 +141,35 @@ void Scene_Play::spawnPlayer() {
     m_player->addComponent<CGravity>(m_playerConfig.GRAVITY);
 }
 
-void Scene_Play::spawnBullet(std::shared_ptr<Entity> entity) {
+float RandomFloat(float a, float b) {
+    float random = ((float) rand()) / (float) RAND_MAX;
+    float diff = b - a;
+    float r = random * diff;
+    return a + r;
+}
+
+void Scene_Play::spawnBoomerang(const std::shared_ptr<Entity>& entity) {
+    const auto boomerang = m_entityManager.addEntity("boomer");
+    boomerang->addComponent<CAnimation>(m_game->assets().getAnimation("Boomerang"), true);
+    const auto direction = entity->getComponent<CTransform>().scale.x < 0 ? -1 : 1;
+
+    boomerang->addComponent<CTransform>(
+     entity->getComponent<CTransform>().pos,
+        vec2(static_cast<float>(direction) * 2 * m_playerConfig.SPEED - 3.f, RandomFloat(-1.1f, 0.8f)),
+        entity->getComponent<CTransform>().scale,
+        0
+        );
+    boomerang->addComponent<CBoundingBox>(boomerang->getComponent<CAnimation>().animation.getSize());
+    boomerang->addComponent<CLifespan>(100, m_currentFrame);
+}
+
+void Scene_Play::spawnBullet(const std::shared_ptr<Entity>& entity) {
     auto bullet = m_entityManager.addEntity("bullet");
     bullet->addComponent<CAnimation>(m_game->assets().getAnimation(m_playerConfig.WEAPON), true);
     auto direction = entity->getComponent<CTransform>().scale.x < 0 ? -1 : 1;
     bullet->addComponent<CTransform>(
         entity->getComponent<CTransform>().pos,
-        vec2(direction * 2 * m_playerConfig.SPEED, 0),
+        vec2(static_cast<float>(direction) * 2 * m_playerConfig.SPEED, 0),
         entity->getComponent<CTransform>().scale,
         0
     );
@@ -188,7 +210,7 @@ void Scene_Play::sMovement() {
     }
     if (m_player->getComponent<CInput>().shoot) {
         if (m_player->getComponent<CInput>().canShoot) {
-            spawnBullet(m_player);
+            spawnBoomerang(m_player);
             m_player->getComponent<CInput>().canShoot = false;
         }
     } else {
@@ -204,7 +226,18 @@ void Scene_Play::sMovement() {
             }
         }
         entity->getComponent<CTransform>().prevPos = entity->getComponent<CTransform>().pos;
-        entity->getComponent<CTransform>().pos += entity->getComponent<CTransform>().velocity;
+        if (entity->hasComponent<CLifespan>()) {
+            auto &eLife = entity->getComponent<CLifespan>();
+            if (m_currentFrame - eLife.frameCreated >= (eLife.lifespan / 2)) {
+                
+                entity->getComponent<CTransform>().pos -= entity->getComponent<CTransform>().velocity;
+            } else {
+                entity->getComponent<CTransform>().pos += entity->getComponent<CTransform>().velocity;
+            }
+        } else {
+            entity->getComponent<CTransform>().pos += entity->getComponent<CTransform>().velocity;
+
+        }
     }
 }
 

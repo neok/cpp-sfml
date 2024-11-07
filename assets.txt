@@ -16,6 +16,7 @@ Texture     TexTree        images/mario/tree.png
 Texture     TexCastleSmall images/mario/castle_small.png
 Texture     TexFlower      images/mario/flower.png
 Texture     TexBush        images/mario/bush.png
+Texture     TexBoomerang   images/megaman/boom.png
 Animation   Stand          TexStand       2  30
 Animation   StandShoot     TexStandShoot  1   1
 Animation   Run            TexRun         3   7
@@ -34,5 +35,6 @@ Animation   Tree           TexTree        1   1
 Animation   CastleSmall    TexCastleSmall 1   1
 Animation   Flower         TexFlower      1   1
 Animation   Bush           TexBush        1   1
+Animation   Boomerang      TexBoomerang   3   7
 Font        Tech           fonts/tech.ttf
 Font        Mario          fonts/mario.ttf
