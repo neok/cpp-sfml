@@ -18,6 +18,10 @@ vec2 vec2::operator/(const float val) const {
     return {x / val, y / val};
 }
 
+vec2 vec2::operator*(const vec2 &other) const {
+    return vec2(x * other.x, y * other.y);
+}
+
 vec2 vec2::operator+=(vec2 rhs) {
     x += rhs.x;
     y += rhs.y;

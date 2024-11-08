@@ -37,6 +37,8 @@ public:
     [[nodiscard]] float length_squared() const;
 
     vec2 normalize();
+
+    vec2 operator*(const vec2 & vec2) const;
 };
 
 class point2 {

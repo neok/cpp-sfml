@@ -149,18 +149,18 @@ float RandomFloat(float a, float b) {
 }
 
 void Scene_Play::spawnBoomerang(const std::shared_ptr<Entity>& entity) {
-    const auto boomerang = m_entityManager.addEntity("boomer");
+    const auto boomerang = m_entityManager.addEntity("boomerang");
     boomerang->addComponent<CAnimation>(m_game->assets().getAnimation("Boomerang"), true);
     const auto direction = entity->getComponent<CTransform>().scale.x < 0 ? -1 : 1;
 
     boomerang->addComponent<CTransform>(
      entity->getComponent<CTransform>().pos,
-        vec2(static_cast<float>(direction) * 2 * m_playerConfig.SPEED - 3.f, RandomFloat(-1.1f, 0.8f)),
+        vec2(static_cast<float>(direction) * 2 * m_playerConfig.SPEED, RandomFloat(-1.1f, 0.8f)),
         entity->getComponent<CTransform>().scale,
         0
         );
     boomerang->addComponent<CBoundingBox>(boomerang->getComponent<CAnimation>().animation.getSize());
-    boomerang->addComponent<CLifespan>(100, m_currentFrame);
+    boomerang->addComponent<CLifespan>(120, m_currentFrame);
 }
 
 void Scene_Play::spawnBullet(const std::shared_ptr<Entity>& entity) {
@@ -228,11 +228,22 @@ void Scene_Play::sMovement() {
         entity->getComponent<CTransform>().prevPos = entity->getComponent<CTransform>().pos;
         if (entity->hasComponent<CLifespan>()) {
             auto &eLife = entity->getComponent<CLifespan>();
+            auto &eTransform = entity->getComponent<CTransform>();
+            auto &pTransform = m_player->getComponent<CTransform>();
+
+            // Calculate direction vector from entity to player
+            vec2 directionToPlayer = pTransform.pos - eTransform.pos;
+
+            // Normalize the direction (optional, depending on your needs)
+            directionToPlayer = normalize(directionToPlayer);
+
             if (m_currentFrame - eLife.frameCreated >= (eLife.lifespan / 2)) {
-                
-                entity->getComponent<CTransform>().pos -= entity->getComponent<CTransform>().velocity;
+                // After half lifespan, move towards player
+                eTransform.velocity = directionToPlayer * eTransform.velocity.length();
+                eTransform.pos += eTransform.velocity;
             } else {
-                entity->getComponent<CTransform>().pos += entity->getComponent<CTransform>().velocity;
+                // First half of lifespan, continue with original movement
+                eTransform.pos += eTransform.velocity;
             }
         } else {
             entity->getComponent<CTransform>().pos += entity->getComponent<CTransform>().velocity;
@@ -254,6 +265,20 @@ void Scene_Play::sLifespan() {
 }
 
 void Scene_Play::sCollision() {
+    for (const auto &boomerang: m_entityManager.getEntities("boomerang")) {
+        if (boomerang->hasComponent<CLifespan>()) {
+            auto &eLife = boomerang->getComponent<CLifespan>();
+
+            if (m_currentFrame - eLife.frameCreated >= (eLife.lifespan / 2)) {
+                vec2 overlap = Physics::GetOverlap(boomerang, m_player);
+
+                if (overlap.y > 0 && overlap.x > 0) {
+                    boomerang->destroy();
+                }
+            }
+
+        }
+    }
     for (const auto &bullet: m_entityManager.getEntities("bullet")) {
         for (const auto &tile: m_entityManager.getEntities("tile")) {
             vec2 overlap = Physics::GetOverlap(bullet, tile);
