@@ -19,9 +19,3 @@ project_3 - simple game engine for mario like games
 ![Screenshot 2024-10-02 200918](https://github.com/user-attachments/assets/66b85152-7e8a-4d9b-8389-ccbb94e41e16)
 
 ![Ownage2024-09-2915-23-13-ezgif com-video-to-gif-converter](https://github.com/user-attachments/assets/63281e32-211f-4fba-9dfa-c1a306e036a6)
-
-
-TODO
-1. Write architecture on paper
-2. Understand where and what
-3. Implement vec2 and understand geometry
